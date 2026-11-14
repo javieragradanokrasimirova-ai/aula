@@ -77,4 +77,10 @@ const plan=await I.readExport(z);
 assert.equal(plan.lessons.length,1);assert.equal(plan.lessons[0].files.length,1,'los archivos que no están en el ZIP se ignoran');assert.equal(plan.bytes,3000);assert.equal(plan.settings.subjects.length,9);
 const b=await I.entryBlob(z,plan.entries.get('PSP/2026-10-27 Hilos/PSP 27.m4a'),'audio/mp4');assert.equal(b.size,3000);assert.deepEqual(new Uint8Array(await b.arrayBuffer()),audio);assert.equal(b.type,'audio/mp4');
 await assert.rejects(I.readExport(zip([['otra.txt','x']])),/aula.json/);await assert.rejects(I.readExport(new Blob(['no soy un zip'])),/ZIP válido/);
+// Alias: las palabras distintivas del nombre cuentan («multimedia»), las compartidas o genéricas no («programación»).
+const A=await import('../.test-runtime/assistant.mjs');
+const P2=S.makePlan(S.validate({version:1,course:'',days:5,periods:[],week:[],subjects:[{id:'PMDM',short:'PMDM',name:'Programación multimedia',color:'#d1e5fa',teacher:'',archive:true,moodle:[],words:[]},{id:'PSP',short:'PSP',name:'Programación de servicios',color:'#e4daf9',teacher:'',archive:true,moodle:[],words:[]}]}).settings);
+assert.deepEqual(A.parse('examen de multimedia',new Date(2026,10,4),{plan:P2}).subjects,['PMDM']);
+assert.deepEqual(A.parse('clases de servicios',new Date(2026,10,4),{plan:P2}).subjects,['PSP']);
+assert.deepEqual(A.parse('clases de programacion',new Date(2026,10,4),{plan:P2}).subjects,[]);
 console.log('PASS núcleo: documento (clases, archivos, calendario, ajustes), almacén en fila, subidas y borrados, importación del ZIP');

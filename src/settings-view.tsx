@@ -196,7 +196,7 @@ function MoveLessons({from,count,targets,onMoved}:{from:Subject;count:number;tar
       <button type="button" className="ghost" disabled={busy} onClick={()=>setConfirm(false)}>Cancelar</button>
       <button type="button" className="primary" disabled={busy} onClick={run}>{busy?<Loader2 className="spin" size={15}/>:<Check size={15}/>}Sí, mover</button>
     </>:<>
-      <span className="set-move-label"><ArrowRightLeft size={15}/>Mover sus {count} {count===1?'clase':'clases'} a</span>
+      <span className="set-move-label"><ArrowRightLeft size={15}/>{count===1?'Mover su clase a':`Mover sus ${count} clases a`}</span>
       <select aria-label="Asignatura de destino" value={to} onChange={e=>setTo(e.target.value)}><option value="">Elige asignatura…</option>{targets.map(t=><option key={t.id} value={t.id}>{t.short} · {t.name}</option>)}</select>
       <button type="button" className="ghost" disabled={!to} onClick={()=>setConfirm(true)}>Mover</button>
     </>}

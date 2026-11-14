@@ -128,8 +128,12 @@ export function makePlan(settings:Settings){
 
   // Para el asistente: formas de nombrar cada asignatura (sin tildes, en minúsculas).
   const esc=(s:string)=>s.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+  // Además, cada palabra distintiva del nombre («multimedia», «interfaces») si no sale en otra asignatura.
+  const GENERIC=new Set(['programacion','desarrollo','sistemas','lenguaje','lenguajes','fundamentos','introduccion','tecnologia','tecnologias','aplicaciones','proyecto','modulo','basico','avanzado','personal','general']);
+  const nameWords=(s:Subject)=>[...new Set(norm(s.name).split(/[^a-z0-9ñ]+/).filter(w=>w.length>=5&&!GENERIC.has(w)))];
+  const wordCount=new Map<string,number>();for(const s of subjects)for(const w of nameWords(s))wordCount.set(w,(wordCount.get(w)??0)+1);
   const aliases:[string,string][]=subjects.map(s=>{
-    const forms=[...new Set([s.short,s.name,s.id,...s.words].map(w=>norm(w).replace(/\s+/g,' ').trim()).filter(w=>w.length>=2))].sort((a,b)=>b.length-a.length);
+    const forms=[...new Set([s.short,s.name,s.id,...s.words,...nameWords(s).filter(w=>wordCount.get(w)===1)].map(w=>norm(w).replace(/\s+/g,' ').trim()).filter(w=>w.length>=2))].sort((a,b)=>b.length-a.length);
     return [s.id,forms.map(esc).join('|')];
   });
   const vocab=[...new Set(subjects.flatMap(s=>[s.short,s.name,s.id,...s.words]).flatMap(w=>norm(w).split(/[^a-z0-9ñ]+/)).filter(w=>w.length>=4))];

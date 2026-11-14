@@ -3,3 +3,4 @@ dist
 .test-runtime
 *.local
 .claude
+public/_pruebas

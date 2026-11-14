@@ -44,6 +44,11 @@ async function serveFile(req,id,q){
   }
   h.set('Content-Type',q.get('type')||r.headers.get('Content-Type')||'application/octet-stream');
   h.set('Accept-Ranges','bytes');h.set('Cache-Control','private, no-store');h.set('X-Content-Type-Options','nosniff');
+  // Un archivo subido (un .html o .svg, por ejemplo) nunca puede ejecutar código dentro de Aula: se abre
+  // «aislado». Los PDF quedan fuera porque el visor de PDF del navegador no funciona aislado; un PDF no
+  // ejecuta código de la página.
+  const type=(h.get('Content-Type')||'').toLowerCase();
+  if(!type.startsWith('application/pdf'))h.set('Content-Security-Policy',"sandbox; default-src 'none'; img-src 'self' data: blob:; media-src 'self' blob:; style-src 'unsafe-inline'");
   const name=q.get('name')||'archivo';
   h.set('Content-Disposition',`${q.has('download')?'attachment':'inline'}; filename="archivo"; filename*=UTF-8''${encodeURIComponent(name)}`);
   return new Response(r.body,{status:r.status,headers:h});

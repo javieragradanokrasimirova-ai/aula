@@ -29,6 +29,8 @@ const kindLabel={audio:'Audio',image:'Imagen',doc:'Documento'};
 
 export default function Archive({initial,settings:initialSettings,onSignOut,startImport}:{initial?:{lessons:Lesson[];files:Item[]};settings?:Settings;onSignOut:()=>void;startImport?:boolean}){
   const store=useStore(),api=(b:object)=>store.archive(b);
+  // Con Drive, lo borrado va a la papelera de Drive; en el modo demo se borra del todo.
+  const trashNote=(many:boolean)=>store.adapter.kind==='drive'?`${many?'Los archivos van':'El archivo va'} a la papelera de tu Google Drive: puedes recuperarlos allí durante 30 días.`:'En el modo demo no se puede deshacer.';
   const [importing,setImporting]=useState(!!startImport),onImport=()=>setImporting(true);
   // Tus ajustes (asignaturas, horario…) y lo que se calcula con ellos, para toda la web.
   const [settings,setSettings]=useState<Settings>(initialSettings??DEFAULT_SETTINGS);
@@ -67,14 +69,17 @@ export default function Archive({initial,settings:initialSettings,onSignOut,star
   const backToList=()=>{setDir(-1);if(history.state?.lesson)history.back();else setSelected(null)};
   const openViewer=(items:Item[],start:number)=>{history.pushState({lesson:selected,viewer:true},'');setViewer({items,start})};
   const closeViewer=()=>{if(history.state?.viewer)history.back();else setViewer(null)};
-  const chooseSubject=(id:string)=>{setFilter(id);if(selected)backToList();else if(section!=='archive')leaveCalendar()};
+  // Ir a la lista de clases desde cualquier sitio. No se usa «atrás»: si antes estuviste en otra sección,
+  // el historial te devolvería allí (p. ej. de Ajustes al Calendario).
+  const goHome=()=>{history.pushState(null,'',location.pathname+location.search);setDir(-1);setSelected(null);setSection('archive');scrollTo({top:0})};
+  const chooseSubject=(id:string)=>{setFilter(id);if(selected||section!=='archive')goHome()};
 
   const active=lessons.find(l=>l.id===selected);
   const byLesson=useMemo(()=>{const m=new Map<string,Item[]>();for(const f of files){const a=m.get(f.lesson);if(a)a.push(f);else m.set(f.lesson,[f])}return m},[files]);
   const total=useMemo(()=>files.reduce((a,f)=>a+f.size,0),[files]);
-  const listed=useMemo(()=>{const q=search.trim().toLowerCase();return lessons.filter(l=>{const fs=byLesson.get(l.id)??[];
-    return (!filter||l.subject===filter)&&(!q||[l.title,l.topic,l.date,dateLabel(l.date),l.subject,...fs.map(f=>f.name)].join(' ').toLowerCase().includes(q))&&(type==='all'||fs.some(f=>kindOf(f)===type))})
-    .sort((a,b)=>sort==='old'?a.date.localeCompare(b.date):b.date.localeCompare(a.date))},[lessons,byLesson,filter,search,type,sort]);
+  const listed=useMemo(()=>{const fold=(t:string)=>t.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,''),q=fold(search.trim());return lessons.filter(l=>{const fs=byLesson.get(l.id)??[];
+    return (!filter||l.subject===filter)&&(!q||fold([l.title,l.topic,l.notes,l.date,dateLabel(l.date),l.subject,plan.short(l.subject),plan.name(l.subject),...fs.map(f=>f.name)].join(' ')).includes(q))&&(type==='all'||fs.some(f=>kindOf(f)===type))})
+    .sort((a,b)=>sort==='old'?a.date.localeCompare(b.date):b.date.localeCompare(a.date))},[lessons,byLesson,filter,search,type,sort,plan]);
   const activeFiles=active?byLesson.get(active.id)??[]:[];
   const activeUploads=active?uploads.filter(u=>u.lesson===active.id&&u.status!=='done'&&u.status!=='cancelled'):[];
 
@@ -109,9 +114,9 @@ export default function Archive({initial,settings:initialSettings,onSignOut,star
   }
   function addFiles(list:File[]){if(active&&list.length)add(list,active.id,active.title)}
   function removeLesson(){if(!active)return;const id=active.id,n=activeFiles.length;
-    setAsk({title:'¿Eliminar esta clase?',text:`Se borrarán «${active.title}» y ${plural(n,'archivo','archivos')}. Esta acción no se puede deshacer.`,confirm:'Eliminar clase',danger:true,run:async()=>{
+    setAsk({title:'¿Eliminar esta clase?',text:`Se borrarán «${active.title}» y ${plural(n,'archivo','archivos')}. ${trashNote(n!==1)}`,confirm:'Eliminar clase',danger:true,run:async()=>{
       cancel(undefined,id);await api({action:'deleteLesson',id});setLessons(ls=>ls.filter(l=>l.id!==id));setFiles(fs=>fs.filter(f=>f.lesson!==id));backToList();toast('Clase eliminada.')}})}
-  function removeFile(f:Item){setAsk({title:'¿Eliminar este archivo?',text:`«${f.name}» se borrará definitivamente.`,confirm:'Eliminar',danger:true,run:async()=>{await api({action:'deleteFile',id:f.id});setFiles(fs=>fs.filter(x=>x.id!==f.id));toast('Archivo eliminado.')}})}
+  function removeFile(f:Item){setAsk({title:'¿Eliminar este archivo?',text:`Se borrará «${f.name}». ${trashNote(false)}`,confirm:'Eliminar',danger:true,run:async()=>{await api({action:'deleteFile',id:f.id});setFiles(fs=>fs.filter(x=>x.id!==f.id));toast('Archivo eliminado.')}})}
   function rename(f:Item){setAsk({title:'Renombrar archivo',confirm:'Guardar nombre',input:f.name,run:async name=>{name=name.trim();if(!name||name===f.name)return;await api({action:'renameFile',id:f.id,name});setFiles(fs=>fs.map(x=>x.id===f.id?{...x,name}:x))}})}
   async function downloadClass(){
     if(!active||(zip&&zip.status!=='done'&&zip.status!=='error'))return;

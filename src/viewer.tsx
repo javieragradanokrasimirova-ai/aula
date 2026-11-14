@@ -15,6 +15,10 @@ function NoWorker({f}:{f:Item}){
     <button className="primary" disabled={busy} onClick={save}>{busy?<Loader2 className="spin" size={17}/>:<Download size={17}/>}Descargar · {bytes(f.size)}</button></div>;
 }
 
+// Textos sencillos (apuntes .txt, código, CSV…) se enseñan tal cual. Un .html no: se descarga.
+const TEXT_EXT=/\.(txt|md|csv|json|xml|java|kt|py|js|ts|c|cpp|cs|sql|log|yml|yaml|ini|properties)$/i;
+const isText=(f:Item)=>{const t=guessType(f.name,f.type);return (t.startsWith('text/')&&!/html|svg/.test(t))||TEXT_EXT.test(f.name)};
+
 // Visor a pantalla completa. Con varias fotos permite pasar de una a otra con
 // flechas, teclado o deslizando, y ampliar con doble toque, pellizco o rueda.
 export default function Viewer({items,start,onClose}:{items:Item[];start:number;onClose:()=>void}){
@@ -34,6 +38,7 @@ export default function Viewer({items,start,onClose}:{items:Item[];start:number;
     </header>
     <div className="viewer-stage" key={f.id} data-dir={dir}>
       {!navigator.serviceWorker?.controller?<NoWorker f={f}/>:viewableImage(f)?<Zoomable f={f} onSwipe={go} many={many}/>:kindOf(f)==='audio'?<div className="viewer-card"><span className="viewer-card-icon"><FileAudio size={40}/></span><b>{f.name}</b><audio controls autoPlay preload="metadata" src={fileURL(f)}/></div>
+        :isText(f)?<div className="viewer-pdf viewer-text"><iframe title={f.name} src={fileURL({...f,type:'text/plain; charset=utf-8'})}/></div>
         :guessType(f.name,f.type)==='application/pdf'?<div className="viewer-pdf"><iframe title={f.name} src={fileURL(f)}/><a className="viewer-link" href={fileURL(f)} target="_blank" rel="noopener"><ExternalLink size={15}/>Abrir en otra pestaña</a></div>
         :<div className="viewer-card"><span className="viewer-card-icon"><FileText size={40}/></span><b>{f.name}</b><p>Este formato no se puede mostrar aquí. Descarga el original para abrirlo con tu aplicación.</p><a className="primary" href={fileURL(f,true)}><Download size={17}/>Descargar · {bytes(f.size)}</a></div>}
     </div>
