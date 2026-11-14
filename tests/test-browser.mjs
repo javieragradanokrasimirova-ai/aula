@@ -2,7 +2,7 @@
 // modo demo, service worker sirviendo archivos (entero y por «Range») y ZIP en streaming.
 // Uso: node tests/test-browser.mjs   (opcional: EDGE=ruta\msedge.exe)
 import {spawn} from 'node:child_process';import {mkdtempSync,rmSync} from 'node:fs';import {tmpdir} from 'node:os';import {join} from 'node:path';import assert from 'node:assert/strict';
-const EDGE=process.env.EDGE||'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe',URL0='http://127.0.0.1:5174/',PORT=9339;
+const EDGE=process.env.EDGE||'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe',URL0=process.env.URL||'http://127.0.0.1:5174/',PORT=9339;
 const profile=mkdtempSync(join(tmpdir(),'aula-edge-'));
 const edge=spawn(EDGE,['--headless=new',`--remote-debugging-port=${PORT}`,`--user-data-dir=${profile}`,'--no-first-run','about:blank'],{stdio:'ignore'});
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
