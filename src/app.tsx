@@ -62,7 +62,7 @@ export default function App(){
         <li><FlaskConical size={16}/><span><b>Sin cuenta</b>, todo se queda solo en este navegador. Ideal para probar.</span></li>
       </ul>
     </div>
-    <nav className="welcome-links"><a href="./privacidad.html">Privacidad</a><a href="https://github.com/aljavieragradanokrasimirova-svg/aula" rel="noopener">Código fuente</a></nav>
+    <nav className="welcome-links"><a href="./privacidad.html">Privacidad</a><a href="https://github.com/javieragradanokrasimirova-ai/aula" rel="noopener">Código fuente</a></nav>
     {savedMode()===null&&<button className="welcome-reset" onClick={async()=>{if(confirm('¿Borrar todo lo guardado en el modo demo de este navegador?')){await resetDemo();await session().del('session','current')}}}>Borrar datos del modo demo</button>}
   </div>;
 }
