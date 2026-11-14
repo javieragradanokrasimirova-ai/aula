@@ -105,6 +105,7 @@ export async function driveAdapter():Promise<Adapter>{
     },
     upload:(file,meta,o)=>resumable(file,meta,files,o),
     // Borrar = mandar a la papelera de Drive: se puede recuperar durante 30 días.
+    async rename(id,name){await call(`${API}/files/${id}?fields=id`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({name})})},
     async remove(id){await call(`${API}/files/${id}?fields=id`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({trashed:true})})},
     async blob(id){return (await call(`${API}/files/${id}?alt=media`,{},true)).blob()},
     async signOut(){setToken(null)},

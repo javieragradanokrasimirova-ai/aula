@@ -164,7 +164,7 @@ export default function Archive({initial,settings:initialSettings,onSignOut}:{in
         <div className="storage"><span className="storage-icon"><HardDrive size={16}/></span><div><b>{bytes(total)}</b><small>en {plural(files.length,'archivo','archivos')}</small></div></div>
         <div className="private"><Lock size={13}/> Espacio privado · Solo tú</div>
         <div className="profile">{store.adapter.user.picture?<img src={store.adapter.user.picture} alt="" referrerPolicy="no-referrer"/>:<span>{(store.adapter.user.name[0]??'A').toUpperCase()}</span>}
-          <div><b>{store.adapter.user.name}</b><small>{store.adapter.kind==='drive'?'Guardado en tu Google Drive':'Solo en este navegador'}</small></div>
+          <div title={[store.adapter.user.name,store.adapter.user.email].filter(Boolean).join(" · ")}><b>{store.adapter.user.name}</b><small>{store.adapter.kind==='drive'?'Guardado en tu Google Drive':'Solo en este navegador'}</small></div>
           <button className="iconbtn" title={store.adapter.kind==='drive'?'Cerrar sesión':'Salir del modo demo'} aria-label="Cerrar sesión" onClick={onSignOut}><LogOut size={16}/></button></div>
       </div>
     </aside>

@@ -34,6 +34,14 @@ async function serveFile(req,id,q){
   const r=await getFile(id,req.headers.get('range'));
   if(!r.ok&&r.status!==206)return r;
   const h=new Headers();for(const k of ['Content-Length','Content-Range'])if(r.headers.get(k))h.set(k,r.headers.get(k));
+  // Desde Drive el navegador no deja leer «Content-Range» (ni a veces «Content-Length»): se rehacen
+  // con el tamaño del archivo, que Aula conoce. Sin ellas, el reproductor no podría adelantar el audio.
+  const size=Number(q.get('size'))||0;
+  if(size){
+    const rg=r.status===206?parseRange(req.headers.get('range'),size):null;
+    if(rg&&!h.get('Content-Range'))h.set('Content-Range',`bytes ${rg[0]}-${rg[1]}/${size}`);
+    if(!h.get('Content-Length'))h.set('Content-Length',String(rg?rg[1]-rg[0]+1:size));
+  }
   h.set('Content-Type',q.get('type')||r.headers.get('Content-Type')||'application/octet-stream');
   h.set('Accept-Ranges','bytes');h.set('Cache-Control','private, no-store');h.set('X-Content-Type-Options','nosniff');
   const name=q.get('name')||'archivo';

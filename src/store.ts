@@ -18,6 +18,8 @@ export interface Adapter{
   // Archivos: subir (devuelve su id), borrar y leer (este último solo hace falta sin service worker).
   upload(file:Blob,meta:{name:string;type:string},o:UploadOptions):Promise<string>;
   remove(id:string):Promise<void>;
+  // Opcional: cambiar también el nombre del archivo guardado (así en Drive se ve igual que en Aula).
+  rename?(id:string,name:string):Promise<void>;
   blob(id:string):Promise<Blob>;
   signOut():Promise<void>;
 }
@@ -38,7 +40,7 @@ export class Store{
   async archive(b:any):Promise<any>{
     switch(b.action){
       case 'save':return {id:(await this.mutate(d=>D.saveLesson(d,b))).id};
-      case 'renameFile':await this.mutate(d=>({doc:D.renameFile(d,b.id,String(b.name??''))}));return {ok:true};
+      case 'renameFile':{const name=String(b.name??'');await this.mutate(d=>({doc:D.renameFile(d,b.id,name)}));await this.adapter.rename?.(b.id,name.trim()).catch(()=>{});return {ok:true}}
       case 'deleteFile':{const {item}=await this.mutate(d=>D.deleteFile(d,b.id));await this.adapter.remove(item.id).catch(()=>{});return {ok:true}}
       case 'deleteLesson':{const {removed}=await this.mutate(d=>D.deleteLesson(d,b.id));await Promise.all(removed.map(f=>this.adapter.remove(f.id).catch(()=>{})));return {ok:true}}
     }

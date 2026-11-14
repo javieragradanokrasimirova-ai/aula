@@ -64,7 +64,7 @@ main{margin-left:256px;width:calc(100% - 256px);min-width:0}
 .storage small{font-size:12px;color:var(--muted)}
 .private{display:flex;align-items:center;gap:7px;margin:14px 8px 16px;font-size:12px;color:var(--muted)}
 .profile{border-top:1px solid var(--line);padding:16px 6px 0;display:flex;gap:10px;align-items:center}
-.profile>div{flex:1;min-width:0}.profile>div b,.profile>div small{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.profile>div{flex:1;min-width:0;overflow:hidden}.profile>div b,.profile>div small{display:block;max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .profile>img{width:34px;height:34px;border-radius:50%;flex-shrink:0}
 .profile>span{background:#e8e9df;border-radius:50%;width:34px;height:34px;display:grid;place-items:center;font-size:13px;font-weight:600}
 .profile b{font-size:13px;font-weight:600}

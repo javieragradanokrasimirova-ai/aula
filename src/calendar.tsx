@@ -198,7 +198,7 @@ function EventForm({edit,date,onClose,onSave}:{edit?:CalEvent;date:string;onClos
 // se exporta el archivo .ics y se sube aquí. Lo tuyo (importancia, hechas) se conserva.
 function ConnectForm({feed,run,onClose,toast}:{feed:Feed;run:(b:object)=>Promise<any>;onClose:()=>void;toast:(t:string)=>void}){
   const [busy,setBusy]=useState(false),[error,setError]=useState('');
-  const pick=async(f:File)=>{setBusy(true);setError('');try{const d=await run({action:'import',ics:await f.text()});toast(`${d.imported} eventos de Moodle importados.`);onClose()}catch(e){setError((e as Error).message)}finally{setBusy(false)}};
+  const pick=async(f:File)=>{setBusy(true);setError('');try{const d=await run({action:'import',ics:await f.text()});toast(d.imported===1?'1 evento de Moodle importado.':`${d.imported} eventos de Moodle importados.`);onClose()}catch(e){setError((e as Error).message)}finally{setBusy(false)}};
   return <Modal label="Importar de Moodle" onClose={onClose}>{close=><>
     <div className="modal-head"><div><span className="eyebrow">MOODLE</span><h2>{feed?'Actualizar desde Moodle':'Traer tu calendario de Moodle'}</h2></div><button className="iconbtn" aria-label="Cerrar" onClick={close}><X size={20}/></button></div>
     {feed&&<p className="connect-state"><Link2 size={15}/>Última importación: <b>{sinceText(feed.importedAt)}</b>. Repítelo de vez en cuando para ver las tareas nuevas.</p>}
