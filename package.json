@@ -1,6 +1,7 @@
 {
   "name": "aula",
   "private": true,
+  "license": "MIT",
   "version": "0.1.0",
   "type": "module",
   "description": "Aula: tus clases, horario y entregas en un sitio. Los datos se guardan en tu propio Google Drive.",

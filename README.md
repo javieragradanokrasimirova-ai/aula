@@ -41,3 +41,7 @@ Cada `push` a `main` publica la web en GitHub Pages (`.github/workflows/pages.ym
 ## Moodle
 
 Sin servidor, la web no puede leer Moodle directamente. Se exporta el calendario (`.ics`) desde Moodle y se importa en **Calendario → Trae tu calendario de Moodle**. Lo que marques (importancia, hechas) se conserva al volver a importarlo.
+
+## Licencia
+
+[MIT](LICENSE): puedes usar, copiar, modificar y compartir Aula libremente, manteniendo el aviso de autoría.
