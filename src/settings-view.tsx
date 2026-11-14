@@ -2,7 +2,7 @@
 // Pantalla de Ajustes: curso, asignaturas (con Moodle y el dinosaurio) y horario.
 // Se edita una copia; nada se guarda hasta pulsar «Guardar cambios» (salvo «mover sus clases», que es inmediato).
 import {useEffect,useMemo,useRef,useState} from 'react';
-import {FolderInput,AlertCircle,ArrowDown,ArrowRightLeft,ArrowUp,ArrowUpRight,Check,ChevronDown,Coffee,Eraser,Link2,Loader2,Plus,Trash2,X} from 'lucide-react';
+import {FolderInput,LogOut,AlertCircle,ArrowDown,ArrowRightLeft,ArrowUp,ArrowUpRight,Check,ChevronDown,Coffee,Eraser,Link2,Loader2,Plus,Trash2,X} from 'lucide-react';
 import {DAYS,PALETTE,hhmm,newId,validate,type Period,type Settings,type Subject} from './settings';
 import type {Lesson} from './types';
 import WeekPainter from './week-painter';
@@ -14,8 +14,8 @@ const fromInput=(v:string)=>{const m=v.match(/^(\d{1,2}):(\d{2})$/);return m?Mat
 const words=(v:string)=>v.split(/[,;\n]/).map(w=>w.trim().toLowerCase()).filter(Boolean);
 const DAY_OPTIONS:[number,string][]=[[5,'Lunes a viernes'],[6,'Hasta el sábado'],[7,'Toda la semana']];
 
-type Props={settings:Settings;lessons:Lesson[];events:CalEvent[];onSaved:(s:Settings)=>void;onMoved:(from:string,to:string)=>void;onImport:()=>void};
-export default function SettingsView({settings,lessons,events,onSaved,onMoved,onImport}:Props){
+type Props={settings:Settings;lessons:Lesson[];events:CalEvent[];onSaved:(s:Settings)=>void;onMoved:(from:string,to:string)=>void;onImport:()=>void;onSignOut:()=>void};
+export default function SettingsView({settings,lessons,events,onSaved,onMoved,onImport,onSignOut}:Props){
   const store=useStore();
   const [draft,setDraft]=useState<Settings>(settings),[version,setVersion]=useState(0);
   const [open,setOpen]=useState<string|null>(null),[fresh,setFresh]=useState<string[]>([]);
@@ -87,6 +87,12 @@ export default function SettingsView({settings,lessons,events,onSaved,onMoved,on
 
     <section className="set-card" aria-labelledby="set-data">
       <header><h2 id="set-data">Tus datos</h2><p>{store.adapter.kind==='drive'?'Todo se guarda en tu Google Drive, en la carpeta «Aula». Aula no guarda nada en ningún otro sitio.':'Estás en modo demo: todo se guarda solo en este navegador.'}</p></header>
+      {/* Con qué cuenta estás (en el móvil la barra lateral no lo enseña) y salir. */}
+      <div className="set-account">
+        {store.adapter.user.picture?<img src={store.adapter.user.picture} alt="" referrerPolicy="no-referrer"/>:<span>{(store.adapter.user.name[0]??'A').toUpperCase()}</span>}
+        <div><b>{store.adapter.user.name}</b><small>{store.adapter.kind==='drive'?store.adapter.user.email??'Cuenta de Google':'Sin cuenta: solo en este navegador'}</small></div>
+        <button type="button" className="ghost" onClick={onSignOut}><LogOut size={15}/>{store.adapter.kind==='drive'?'Cerrar sesión':'Salir del modo demo'}</button>
+      </div>
       <button type="button" className="ghost set-import" onClick={onImport}><FolderInput size={16}/>Importar una copia de Aula (ZIP de «Exportar todo»)</button>
       <p className="set-privacy">Cómo se tratan tus datos y cómo borrarlos: <a href="./privacidad.html" target="_blank" rel="noopener">política de privacidad</a>.</p>
     </section>

@@ -216,7 +216,7 @@ export default function Archive({initial,settings:initialSettings,onSignOut,star
             {!activeFiles.length&&!activeUploads.length&&<p className="filelist-empty">Todavía no hay archivos en esta clase.</p>}
           </div>
         </>:inCalendar?<CalendarView cal={cal} toast={toast} onDone={celebrate}/>
-        :inSettings?<SettingsView settings={settings} lessons={lessons} events={cal.events} onImport={onImport} onSaved={s=>{setSettings(s);cal.reload();toast('Ajustes guardados.')}}
+        :inSettings?<SettingsView settings={settings} lessons={lessons} events={cal.events} onImport={onImport} onSignOut={onSignOut} onSaved={s=>{setSettings(s);cal.reload();toast('Ajustes guardados.')}}
           onMoved={(from,to)=>{const n=lessons.filter(l=>l.subject===from).length;setLessons(ls=>ls.map(l=>l.subject===from?{...l,subject:to}:l));toast(`${plural(n,'clase movida','clases movidas')} a ${plan.short(to)}.`)}}/>:<>
           <div className="page-heading">
             <div><div className="eyebrow">TU CURSO, EN UN SOLO LUGAR</div><h1>{filter?plan.name(filter):'Todo lo que aprendes, aquí.'}</h1><p>Guarda tus clases. Encuentra lo que necesitas. A tu ritmo.</p></div>
