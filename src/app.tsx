@@ -4,6 +4,7 @@ import {useEffect,useState} from 'react';
 import {AlertCircle,BookOpen,FlaskConical,HardDrive,Loader2,Lock,LogIn} from 'lucide-react';
 import Archive from './archive';
 import Onboarding from './onboarding';
+import UpdateBanner from './update-banner';
 import {Store,StoreContext} from './store';
 import {demoAdapter,resetDemo} from './demo';
 import {driveAdapter,hasToken,onTokenChange,signIn} from './drive';
@@ -37,6 +38,7 @@ export default function App(){
   async function signOut(){if(!store)return;await store.adapter.signOut();saveMode(null);setStore(null);setExpired(false)}
 
   if(store)return <StoreContext.Provider value={store}>
+    <UpdateBanner/>
     {expired&&<div className="session-bar" role="alert"><AlertCircle size={16}/><span>Tu sesión de Google ha caducado (dura una hora). Para seguir guardando, vuelve a entrar.</span>
       <button className="primary" onClick={async()=>{try{await signIn(store.adapter.user.email);setExpired(false)}catch(e){alert((e as Error).message)}}}><LogIn size={15}/>Continuar con Google</button></div>}
     {welcome?<Onboarding onDone={({importCopy})=>{setStartImport(!!importCopy);setWelcome(false)}}/>
@@ -60,6 +62,7 @@ export default function App(){
         <li><FlaskConical size={16}/><span><b>Sin cuenta</b>, todo se queda solo en este navegador. Ideal para probar.</span></li>
       </ul>
     </div>
+    <nav className="welcome-links"><a href="./privacidad.html">Privacidad</a><a href="https://github.com/aljavieragradanokrasimirova-svg/aula" rel="noopener">Código fuente</a></nav>
     {savedMode()===null&&<button className="welcome-reset" onClick={async()=>{if(confirm('¿Borrar todo lo guardado en el modo demo de este navegador?')){await resetDemo();await session().del('session','current')}}}>Borrar datos del modo demo</button>}
   </div>;
 }

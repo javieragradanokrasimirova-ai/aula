@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Privacidad · Aula</title>
+<meta name="description" content="Qué datos usa Aula, dónde se guardan y cómo borrarlos."/>
+<link rel="icon" type="image/svg+xml" href="./favicon.svg"/>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700&family=Fraunces:opsz,wght@9..144,400&display=swap"/>
+<style>
+  :root{--bg:#f6f7f2;--surface:#fff;--ink:#1f332c;--ink-2:#3b5048;--muted:#66756d;--line:#e5e9e2;--green:#294f3d;--green-soft:#eaf0e5;--leaf:#88aa74}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.65 'Plus Jakarta Sans',system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+  main{max-width:760px;margin:0 auto;padding:40px 16px 64px}
+  .brand{display:inline-flex;align-items:center;gap:10px;font-weight:700;font-size:26px;letter-spacing:-1px;color:var(--ink);text-decoration:none}
+  .brand span{display:grid;place-items:center;width:34px;height:36px;border-radius:10px;background:var(--green);color:#fff;font-size:17px}
+  .brand i{font-style:normal;color:var(--leaf);margin-left:-8px}
+  article{background:var(--surface);border:1px solid var(--line);border-radius:20px;padding:30px 32px;margin-top:24px}
+  h1{font-family:'Fraunces',Georgia,serif;font-weight:400;font-size:38px;line-height:1.15;margin:0 0 6px}
+  h2{font-family:'Fraunces',Georgia,serif;font-weight:400;font-size:24px;margin:30px 0 8px}
+  p,li{color:var(--ink-2)}
+  .date{color:var(--muted);font-size:14px;margin:0 0 18px}
+  .box{background:var(--green-soft);border-radius:14px;padding:14px 18px;color:var(--green)}
+  code{background:#eef1ea;border-radius:6px;padding:1px 6px;font-size:.92em}
+  a{color:var(--green)}
+  footer{margin-top:22px;color:var(--muted);font-size:14px}
+  @media (max-width:640px){article{padding:22px 18px}h1{font-size:30px}}
+</style>
+</head>
+<body>
+<main>
+  <a class="brand" href="./"><span><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 7v14"/><path d="M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z"/></svg></span>aula<i>.</i></a>
+  <article>
+    <h1>Privacidad</h1>
+    <p class="date">Última actualización: 14 de noviembre de 2026</p>
+    <p class="box"><b>En pocas palabras:</b> Aula no tiene servidor ni base de datos propia. Tus clases, archivos y ajustes se guardan en <b>tu propio Google Drive</b>, en una carpeta llamada «Aula». Nadie más (tampoco quien hizo Aula) puede verlos.</p>
+
+    <h2>Qué es Aula</h2>
+    <p>Aula es una web gratuita y de código abierto para organizar lo de clase: audios, fotos y apuntes por asignatura y fecha, el horario y las entregas. Es una página estática alojada en GitHub Pages; todo funciona en tu navegador.</p>
+
+    <h2>Qué datos usa y dónde se guardan</h2>
+    <ul>
+      <li><b>Lo que tú creas en Aula</b> (asignaturas, horario, clases, notas, eventos del calendario y los archivos que subes) se guarda en tu Google Drive: <code>Aula/aula.json</code> y la carpeta <code>Aula/Archivos</code>.</li>
+      <li><b>Tu nombre, tu correo y tu foto de perfil de Google</b> solo se usan para mostrarte con qué cuenta has entrado. No se guardan en ningún sitio.</li>
+      <li><b>El permiso de Google</b> (un «token» que caduca en una hora) se guarda temporalmente en tu navegador para poder leer y escribir en tu carpeta de Aula.</li>
+      <li>Si importas un calendario de Moodle (archivo <code>.ics</code>), se lee en tu navegador y sus eventos pasan a tu <code>aula.json</code>.</li>
+      <li>En el <b>modo demo</b> (sin cuenta), todo se guarda solo en ese navegador.</li>
+    </ul>
+
+    <h2>Permisos que pide a Google</h2>
+    <ul>
+      <li><code>drive.file</code>: ver y modificar <b>solo los archivos que crea Aula</b>. Aula no puede ver el resto de tu Drive.</li>
+      <li><code>openid</code>, <code>email</code> y <code>profile</code>: saber con qué cuenta has entrado.</li>
+    </ul>
+    <p>El uso que hace Aula de la información recibida de las API de Google se ajusta a la <a href="https://developers.google.com/terms/api-services-user-data-policy" rel="noopener">Política de datos de usuario de los servicios de API de Google</a>, incluidos los requisitos de uso limitado. Aula no vende, comparte ni usa tus datos para publicidad, y no los usa para entrenar modelos de inteligencia artificial.</p>
+
+    <h2>Con quién se comparte</h2>
+    <p>Con nadie. La web habla directamente con Google desde tu navegador. Aula no usa analítica, ni cookies de seguimiento, ni publicidad.</p>
+    <p>Para funcionar, tu navegador se conecta a: <b>Google</b> (inicio de sesión, Drive y las fuentes tipográficas), y <b>GitHub Pages</b>, que sirve la web y, como cualquier servidor, puede registrar datos técnicos de la visita (como la dirección IP) según su propia política.</p>
+
+    <h2>Cómo borrar tus datos</h2>
+    <ol>
+      <li>Borra la carpeta <b>Aula</b> de tu Google Drive (y vacía la papelera si quieres que desaparezca del todo).</li>
+      <li>Quita el acceso de Aula a tu cuenta en <a href="https://myaccount.google.com/connections" rel="noopener">myaccount.google.com/connections</a>.</li>
+      <li>Para el modo demo, usa «Borrar datos del modo demo» en la página de inicio o borra los datos del sitio en tu navegador.</li>
+    </ol>
+
+    <h2>Menores</h2>
+    <p>Aula está pensada para estudiantes. Para usar una cuenta de Google hay que cumplir la edad mínima que exige Google en tu país, o contar con el permiso de tu familia.</p>
+
+    <h2>Cambios y contacto</h2>
+    <p>Si esta política cambia, se actualizará esta página y su fecha. Para cualquier duda, abre una incidencia en el <a href="https://github.com/aljavieragradanokrasimirova-svg/aula/issues" rel="noopener">repositorio de Aula en GitHub</a>.</p>
+  </article>
+  <footer><a href="./">Volver a Aula</a> · <a href="https://github.com/aljavieragradanokrasimirova-svg/aula" rel="noopener">Código fuente</a></footer>
+</main>
+</body>
+</html>

@@ -156,7 +156,7 @@ export default function Archive({initial,settings:initialSettings,onSignOut,star
   useEffect(()=>{if(filter&&!subjects.some(s=>s.id===filter))setFilter('')},[subjects,filter]);
   return <PlanContext.Provider value={plan}><div className="shell">
     <aside className="sidebar">
-      <a className="brand" href="/" aria-label="Aula inicio"><span className="brandmark"><BookOpen size={21}/></span>aula<span className="brand-dot">.</span></a>
+      <a className="brand" href="./" aria-label="Aula inicio" onClick={e=>{e.preventDefault();chooseSubject('');scrollTo({top:0,behavior:'smooth'})}}><span className="brandmark"><BookOpen size={21}/></span>aula<span className="brand-dot">.</span></a>
       <div className="workspace"><span className="workspace-avatar">D</span><div><b>Mi espacio de clases</b>{settings.course&&<small>{settings.course}</small>}</div></div>
       <div className="navlabel">BIBLIOTECA</div>
       <button className={'navitem '+(!filter&&!active&&!inCalendar&&!inSettings?'chosen':'')} onClick={()=>chooseSubject('')}><LayoutGrid size={17}/>Todas las clases<span>{lessons.length}</span></button>

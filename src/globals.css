@@ -1012,3 +1012,12 @@ button.slot:active{transform:scale(.97)}
   .onb-rows .onb-short{flex-basis:76px}
   .onb-foot .primary{flex:1;justify-content:center}
 }
+
+.update-bar{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);z-index:60;display:flex;align-items:center;gap:12px;padding:8px 8px 8px 16px;border-radius:14px;background:var(--ink);color:#fff;font-size:14px;box-shadow:var(--sh-3);animation:toast-in var(--t-slow) var(--spring) both;max-width:calc(100vw - 24px)}
+.update-bar svg{flex-shrink:0;color:var(--leaf)}
+.update-bar .primary{min-height:36px;font-size:13px;background:#fff;color:var(--green)}
+@media (max-width:760px){.update-bar{bottom:calc(84px + env(safe-area-inset-bottom))}}
+.welcome-links{display:flex;gap:18px;font-size:13px}
+.welcome-links a{color:var(--muted);text-decoration:underline;text-underline-offset:3px}
+.set-privacy{margin:12px 0 0;font-size:13px;color:var(--muted)}
+.set-privacy a{color:var(--green-2);text-decoration:underline;text-underline-offset:3px}

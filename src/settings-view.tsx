@@ -88,6 +88,7 @@ export default function SettingsView({settings,lessons,events,onSaved,onMoved,on
     <section className="set-card" aria-labelledby="set-data">
       <header><h2 id="set-data">Tus datos</h2><p>{store.adapter.kind==='drive'?'Todo se guarda en tu Google Drive, en la carpeta «Aula». Aula no guarda nada en ningún otro sitio.':'Estás en modo demo: todo se guarda solo en este navegador.'}</p></header>
       <button type="button" className="ghost set-import" onClick={onImport}><FolderInput size={16}/>Importar una copia de Aula (ZIP de «Exportar todo»)</button>
+      <p className="set-privacy">Cómo se tratan tus datos y cómo borrarlos: <a href="./privacidad.html" target="_blank" rel="noopener">política de privacidad</a>.</p>
     </section>
 
     <section className="set-card" aria-labelledby="set-subjects">

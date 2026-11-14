@@ -116,7 +116,7 @@ export async function driveAdapter():Promise<Adapter>{
 // Se abre una «sesión de subida» y se envía por trozos de 8 MB. Si se corta, se pregunta a Drive
 // cuánto le llegó y se sigue desde ahí (también al pulsar «Reintentar»).
 type Resume={uri:string;offset:number};
-async function resumable(file:Blob,meta:{name:string;type:string},parent:string,o:UploadOptions):Promise<string>{
+export async function resumable(file:Blob,meta:{name:string;type:string},parent:string,o:UploadOptions):Promise<string>{
   let st=o.resume?.get() as Resume|undefined;
   const open=async()=>{const r:Response=await call(`${UPLOAD}/files?uploadType=resumable&fields=id`,{method:'POST',
       headers:{'Content-Type':'application/json; charset=UTF-8','X-Upload-Content-Type':meta.type||'application/octet-stream','X-Upload-Content-Length':String(file.size)},
