@@ -29,7 +29,7 @@ export default function ImportView({onClose,onImport}:{onClose:()=>void;onImport
       </div>
       {plan.settings&&<label className="set-switch"><input type="checkbox" checked={withSettings} onChange={e=>setWithSettings(e.target.checked)}/><span className="set-switch-ui"/>
         <span><b>Usar también sus ajustes</b><small>{plural(plan.settings.subjects.length,'asignatura','asignaturas')}, tu horario y el curso «{plan.settings.course||'sin nombre'}». Sustituyen a los de ahora.</small></span></label>}
-      <p className="connect-note">Las clases que ya tengas (misma asignatura, título y fecha) no se duplican. Los archivos se suben uno a uno: puedes seguir usando Aula mientras tanto, pero no cierres la pestaña hasta que acaben.</p>
+      <p className="connect-note">Si ya importaste esta copia (aunque fuera a medias), no se duplica nada: solo se suben los archivos que falten. Puedes seguir usando Aula mientras tanto, pero <b>no cierres ni cambies de página</b> hasta que acaben las subidas.</p>
     </>}
     {error&&<p className="error" role="alert"><AlertCircle size={17}/>{error}</p>}
     <div className="form-footer"><button type="button" className="ghost" onClick={close}>Cancelar</button>

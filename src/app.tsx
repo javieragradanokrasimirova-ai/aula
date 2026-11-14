@@ -3,6 +3,7 @@
 import {useEffect,useState} from 'react';
 import {AlertCircle,BookOpen,FlaskConical,HardDrive,Loader2,Lock,LogIn} from 'lucide-react';
 import Archive from './archive';
+import Onboarding from './onboarding';
 import {Store,StoreContext} from './store';
 import {demoAdapter,resetDemo} from './demo';
 import {driveAdapter,hasToken,onTokenChange,signIn} from './drive';
@@ -17,13 +18,16 @@ const saveMode=(m:Mode|null)=>{try{if(m)localStorage.setItem(MODE_KEY,m);else lo
 export default function App(){
   const [store,setStore]=useState<Store|null>(null),[busy,setBusy]=useState(false),[error,setError]=useState('');
   const [expired,setExpired]=useState(false),[ready,setReady]=useState(false);
+  // Bienvenida: la primera vez (sin asignaturas ni clases). «Ya tenía Aula» abre la importación.
+  const [welcome,setWelcome]=useState(false),[startImport,setStartImport]=useState(false);
 
   async function open(mode:Mode,interactive:boolean){
     setBusy(true);setError('');
     try{
       if(mode==='drive'&&!hasToken()){if(!interactive)return;await signIn()}
       const s=new Store(mode==='drive'?await driveAdapter():await demoAdapter());
-      await s.load();saveMode(mode);setStore(s);
+      const d=await s.load();saveMode(mode);
+      setWelcome(!d.settings.subjects.length&&!d.lessons.length&&!d.events.length);setStore(s);
     }catch(e){setError((e as Error).message)}finally{setBusy(false);setReady(true)}
   }
   // Al volver: si la última vez entraste con Google y la sesión sigue viva (dura una hora), entras directo.
@@ -35,7 +39,8 @@ export default function App(){
   if(store)return <StoreContext.Provider value={store}>
     {expired&&<div className="session-bar" role="alert"><AlertCircle size={16}/><span>Tu sesión de Google ha caducado (dura una hora). Para seguir guardando, vuelve a entrar.</span>
       <button className="primary" onClick={async()=>{try{await signIn(store.adapter.user.email);setExpired(false)}catch(e){alert((e as Error).message)}}}><LogIn size={15}/>Continuar con Google</button></div>}
-    <Archive initial={store.data} settings={store.doc.settings} onSignOut={signOut}/>
+    {welcome?<Onboarding onDone={({importCopy})=>{setStartImport(!!importCopy);setWelcome(false)}}/>
+    :<Archive initial={store.data} settings={store.doc.settings} onSignOut={signOut} startImport={startImport}/>}
   </StoreContext.Provider>;
 
   return <div className="welcome">

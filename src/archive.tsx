@@ -27,9 +27,9 @@ const dateLabel=(s:string)=>new Date(s+'T12:00:00').toLocaleDateString('es-ES',{
 function Kind({f,size=20}:{f:{type:string;name:string};size?:number}){const k=kindOf(f);return k==='audio'?<FileAudio size={size}/>:k==='image'?<ImageIcon size={size}/>:<FileText size={size}/>}
 const kindLabel={audio:'Audio',image:'Imagen',doc:'Documento'};
 
-export default function Archive({initial,settings:initialSettings,onSignOut}:{initial?:{lessons:Lesson[];files:Item[]};settings?:Settings;onSignOut:()=>void}){
+export default function Archive({initial,settings:initialSettings,onSignOut,startImport}:{initial?:{lessons:Lesson[];files:Item[]};settings?:Settings;onSignOut:()=>void;startImport?:boolean}){
   const store=useStore(),api=(b:object)=>store.archive(b);
-  const [importing,setImporting]=useState(false),onImport=()=>setImporting(true);
+  const [importing,setImporting]=useState(!!startImport),onImport=()=>setImporting(true);
   // Tus ajustes (asignaturas, horario…) y lo que se calcula con ellos, para toda la web.
   const [settings,setSettings]=useState<Settings>(initialSettings??DEFAULT_SETTINGS);
   const plan=useMemo(()=>makePlan(settings),[settings]),subjects=plan.archiveSubjects,colorOf=plan.color;
@@ -79,18 +79,27 @@ export default function Archive({initial,settings:initialSettings,onSignOut}:{in
   const activeUploads=active?uploads.filter(u=>u.lesson===active.id&&u.status!=='done'&&u.status!=='cancelled'):[];
 
   // Importar una copia: ajustes (si se quiere) y clases de golpe; los archivos, a la cola de subidas.
+  // Si la copia ya se importó (entera o a medias), no se duplica nada: las clases que ya están se
+  // reconocen por asignatura, título y fecha, y de sus archivos solo se suben los que falten.
   async function runImport(plan:ImportPlan,zip:File,withSettings:boolean){
-    const have=new Set(lessons.map(l=>`${l.subject}|${l.title}|${l.date}`)),todo=plan.lessons.filter(l=>!have.has(`${l.subject}|${l.title}|${l.date}`));
-    const created:{id:string;l:typeof todo[number]}[]=[];
-    await store.replace(d=>{let doc=withSettings&&plan.settings?{...d,settings:plan.settings}:d;
-      for(const l of todo){const r=newLesson(doc,{subject:l.subject,title:l.title,date:l.date,topic:l.topic,notes:l.notes});doc=r.doc;created.push({id:r.id,l})}
+    const key=(l:{subject:string;title:string;date:string})=>`${l.subject}|${l.title}|${l.date}`;
+    const targets:{id:string;l:ImportPlan['lessons'][number]}[]=[];let created=0;
+    await store.replace(d=>{let doc=withSettings&&plan.settings?{...d,settings:plan.settings}:d;targets.length=0;created=0;
+      const have=new Map(doc.lessons.map(l=>[key(l),l.id]));
+      for(const l of plan.lessons){let id=have.get(key(l));
+        if(!id){const r=newLesson(doc,{subject:l.subject,title:l.title,date:l.date,topic:l.topic,notes:l.notes});doc=r.doc;id=r.id;have.set(key(l),id);created++}
+        targets.push({id,l})}
       return doc});
-    setLessons(store.doc.lessons);setSettings(store.doc.settings);
-    for(const {id,l} of created){
-      const fs=await Promise.all(l.files.map(async f=>new File([await entryBlob(zip,plan.entries.get(f.path)!,f.type)],f.name,{type:f.type})));
-      if(fs.length)add(fs,id,l.title);
+    setLessons(store.doc.lessons);setFiles(store.doc.files);setSettings(store.doc.settings);
+    const stored=new Set(store.doc.files.map(f=>`${f.lesson}|${f.name}|${f.size}`));
+    const queued=new Set(uploads.filter(u=>u.status==='queued'||u.status==='uploading'||u.status==='finishing').map(u=>`${u.lesson}|${u.file.name}|${u.file.size}`));
+    let missing=0;
+    for(const {id,l} of targets){
+      const todo=l.files.filter(f=>!stored.has(`${id}|${f.name}|${f.size}`)&&!queued.has(`${id}|${f.name}|${f.size}`));
+      const fs=await Promise.all(todo.map(async f=>new File([await entryBlob(zip,plan.entries.get(f.path)!,f.type)],f.name,{type:f.type})));
+      if(fs.length){add(fs,id,l.title);missing+=fs.length}
     }
-    toast(created.length?`${plural(created.length,'clase importada','clases importadas')}. Subiendo sus archivos…`:'No había clases nuevas que importar.');
+    toast(!created&&!missing?'Ya estaba todo importado.':[created?plural(created,'clase nueva','clases nuevas'):'',missing?`subiendo ${plural(missing,'archivo','archivos')}`:''].filter(Boolean).join(' · ')+'.');
   }
   async function saveLesson(v:Omit<Lesson,'id'>,pending:File[],edit?:Lesson){
     const {id}=await api({action:'save',...v,id:edit?.id});const l={...v,id};

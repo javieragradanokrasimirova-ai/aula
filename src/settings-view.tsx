@@ -5,6 +5,7 @@ import {useEffect,useMemo,useRef,useState} from 'react';
 import {FolderInput,AlertCircle,ArrowDown,ArrowRightLeft,ArrowUp,ArrowUpRight,Check,ChevronDown,Coffee,Eraser,Link2,Loader2,Plus,Trash2,X} from 'lucide-react';
 import {DAYS,PALETTE,hhmm,newId,validate,type Period,type Settings,type Subject} from './settings';
 import type {Lesson} from './types';
+import WeekPainter from './week-painter';
 import type {CalEvent} from './ics';
 import {useStore} from './store';
 
@@ -58,19 +59,6 @@ export default function SettingsView({settings,lessons,events,onSaved,onMoved,on
   const removePeriod=(i:number)=>setDraft(d=>({...d,periods:d.periods.filter((_,j)=>j!==i),week:d.week.map(day=>day.filter((_,j)=>j!==i))}));
   const setDays=(n:number)=>setDraft(d=>({...d,days:n,week:Array.from({length:n},(_,k)=>d.week[k]??d.periods.map(()=>''))}));
 
-  // Pintar el horario: eliges una asignatura (o «Libre») y tocas casillas, o arrastras por varias.
-  // La primera casilla decide: si ya tenía esa asignatura, el gesto la va quitando; si no, la va poniendo.
-  const stroke=useRef<string|null>(null);
-  const setCell=(day:number,i:number,v:string)=>setDraft(d=>d.week[day]?.[i]===v?d:{...d,week:d.week.map((row,k)=>k!==day?row:row.map((c,j)=>j===i?v:c))});
-  const cellAt=(x:number,y:number)=>{const el=(document.elementFromPoint(x,y) as HTMLElement|null)?.closest<HTMLElement>('[data-cell]');return el?el.dataset.cell!.split('-').map(Number):null};
-  const startStroke=(e:React.PointerEvent,day:number,i:number)=>{if(e.button>0)return;e.preventDefault();
-    const v=draft.week[day]?.[i]===brush?'':brush;stroke.current=v;setCell(day,i,v)};
-  useEffect(()=>{
-    const move=(e:PointerEvent)=>{if(stroke.current===null)return;const c=cellAt(e.clientX,e.clientY);if(c)setCell(c[0],c[1],stroke.current)};
-    const end=()=>{stroke.current=null};
-    addEventListener('pointermove',move);addEventListener('pointerup',end);addEventListener('pointercancel',end);
-    return()=>{removeEventListener('pointermove',move);removeEventListener('pointerup',end);removeEventListener('pointercancel',end)};
-  },[]);
   const discard=()=>{setDraft(settings);setFresh([]);setError('');setVersion(v=>v+1)};
 
   async function save(){
@@ -87,7 +75,6 @@ export default function SettingsView({settings,lessons,events,onSaved,onMoved,on
     }catch(e){setError((e as Error).message)}finally{setSaving(false)}
   }
 
-  const brushSubject=draft.subjects.find(s=>s.id===brush),days=DAYS.slice(0,draft.days);
   return <div className="settings-page" key={version}>
     <div className="page-heading">
       <div><div className="eyebrow">TU ESPACIO, A TU MANERA</div><h1>Ajustes</h1><p>Tus asignaturas, tu horario y cómo los reconocen Moodle y el dinosaurio.</p></div>
@@ -173,24 +160,7 @@ export default function SettingsView({settings,lessons,events,onSaved,onMoved,on
         <div className="set-period-add"><button type="button" className="ghost" onClick={()=>addPeriod(false)}><Plus size={15}/>Añadir hora</button><button type="button" className="ghost" onClick={()=>addPeriod(true)}><Coffee size={15}/>Añadir recreo</button></div>
       </div>
 
-      {draft.periods.length>0&&<>
-        <div className="set-brushes" role="radiogroup" aria-label="Asignatura para pintar">
-          {draft.subjects.map(s=><button key={s.id} type="button" role="radio" aria-checked={brush===s.id} className={brush===s.id?'active':''} onClick={()=>setBrush(s.id)}><i style={{background:s.color}}/>{s.short||'Nueva'}</button>)}
-          <button type="button" role="radio" aria-checked={brush===''} className={'eraser'+(brush===''?' active':'')} onClick={()=>setBrush('')}><Eraser size={14}/>Libre</button>
-        </div>
-        <p className="set-brush-hint">{brushSubject?<>Tocando o arrastrando pones <b>{brushSubject.short||'la nueva asignatura'}</b>. Si ya estaba, se queda libre.</>:<>Tocando o arrastrando dejas las casillas <b>libres</b>.</>}</p>
-        <div className="set-week" role="grid" aria-label="Horario semanal" style={{gridTemplateRows:`30px ${draft.periods.map(p=>p.break?'22px':'44px').join(' ')}`,gridTemplateColumns:`var(--st) repeat(${days.length},minmax(0,1fr))`}}>
-          <span/>
-          {days.map(d=><span key={d} className="set-week-day">{d.slice(0,3)}<em>{d.slice(3)}</em></span>)}
-          {draft.periods.map((p,i)=>[
-            <span key={'t'+i} className={'set-week-time'+(p.break?' break':'')}>{p.break?'Recreo':hhmm(p.start)}</span>,
-            ...days.map((d,day)=>{if(p.break)return <span key={day+'-'+i} className="set-cell break"/>;
-              const c=draft.week[day]?.[i]??'',s=draft.subjects.find(x=>x.id===c);
-              return <button key={day+'-'+i} type="button" data-cell={day+'-'+i} className={'set-cell'+(s?' filled':'')} style={{'--tint':s?.color} as React.CSSProperties} aria-label={`${d} ${hhmm(p.start)}: ${s?s.short||s.name:'libre'}`}
-                onPointerDown={e=>startStroke(e,day,i)} onClick={e=>{if(e.detail===0)setCell(day,i,c===brush?'':brush)}}>{s?s.short||'·':''}</button>})
-          ])}
-        </div>
-      </>}
+      <WeekPainter settings={draft} update={setDraft} brush={brush} setBrush={setBrush}/>
     </section>
 
     {(dirty||error)&&<div className="set-savebar" role="region" aria-label="Guardar ajustes">

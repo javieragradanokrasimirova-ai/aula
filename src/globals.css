@@ -968,3 +968,47 @@ button.slot:active{transform:scale(.97)}
   .welcome h1{font-size:28px}
   .import-summary b{font-size:21px}
 }
+
+/* ---------- Asistente de bienvenida ---------- */
+.onboarding{min-height:100vh;display:flex;justify-content:center;align-items:flex-start;padding:40px 16px;background:radial-gradient(90% 70% at 10% 0%,var(--green-tint),var(--bg) 60%)}
+.onb-card{width:min(760px,100%);background:var(--surface);border:1px solid var(--line);border-radius:24px;padding:26px 30px 24px;box-shadow:var(--sh-2);animation:rise var(--t-slow) var(--ease-out) both}
+.onb-head{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;padding-bottom:18px;border-bottom:1px solid var(--line);margin-bottom:22px}
+.onb-brand{font-size:25px;padding:0}.onb-brand .brandmark{width:32px;height:34px;border-radius:9px}
+.onb-steps{list-style:none;display:flex;gap:6px;margin:0;padding:0;flex-wrap:wrap}
+.onb-steps li{display:flex;align-items:center;gap:6px;font-size:12.5px;font-weight:600;color:var(--faint);padding:4px 10px 4px 4px;border-radius:99px}
+.onb-steps li span{width:20px;height:20px;border-radius:50%;display:grid;place-items:center;font-size:11px;background:#eef1ea;color:var(--muted)}
+.onb-steps li.now{background:var(--green-soft);color:var(--green)}.onb-steps li.now span{background:var(--green);color:#fff}
+.onb-steps li.done{color:var(--green-2)}.onb-steps li.done span{background:var(--green-2);color:#fff}
+.onb-body{animation:fade-in var(--t)}
+.onb-body>h1{font-family:var(--serif);font-weight:400;font-size:32px;line-height:1.15;letter-spacing:-.3px;margin:0 0 8px;text-wrap:balance}
+.onb-body>p{color:var(--muted);margin:0 0 20px}
+.onb-choices{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.onb-choice{display:flex;flex-direction:column;align-items:flex-start;gap:6px;text-align:left;border:1px solid var(--line);border-radius:18px;padding:20px;background:var(--surface-2);transition:border-color var(--t),box-shadow var(--t),transform var(--t) var(--ease-out)}
+.onb-choice svg{color:var(--green-2);margin-bottom:4px}
+.onb-choice b{font-size:16px}.onb-choice small{color:var(--muted);font-size:13px;line-height:1.45}
+.onb-choice:hover{border-color:var(--green-2);box-shadow:var(--sh-2);transform:translateY(-2px)}
+.onb-course{max-width:380px}
+.onb-rows{list-style:none;margin:6px 0 0;padding:0;display:flex;flex-direction:column;gap:8px}
+.onb-rows li{display:flex;align-items:center;gap:8px}
+.onb-rows input{border:1px solid var(--line-2);background:#fff;border-radius:10px;padding:0 12px;min-height:44px;font-size:15px;flex:1;min-width:0;transition:border-color var(--t-fast),box-shadow var(--t)}
+.onb-rows input:focus,.onb-gen select:focus,.onb-gen input:focus{outline:none;border-color:#8fae94;box-shadow:0 0 0 4px rgb(127 165 140/.2)}
+.onb-rows .onb-short{flex:0 0 96px;font-weight:600}
+.onb-gen{display:grid;grid-template-columns:repeat(3,1fr);gap:0 12px}
+.onb-gen select,.onb-gen input{border:1px solid var(--line-2);background:#fff;border-radius:10px;padding:0 10px;min-height:42px;font-size:14.5px;font-weight:400;color:var(--ink);width:100%}
+.onb-range{font-size:13px;color:var(--muted);margin:-2px 0 14px}
+.onb-foot{display:flex;justify-content:flex-end;gap:8px;margin-top:22px;padding-top:16px;border-top:1px solid var(--line);flex-wrap:wrap}
+.onb-foot>button:first-child{margin-right:auto}
+.onb-foot .ghost,.onb-foot .primary{display:inline-flex;gap:7px;align-items:center}
+.onb-ics{display:inline-flex;gap:8px;align-items:center;border:1px solid var(--line);cursor:pointer}
+.onb-ok{display:flex;gap:8px;align-items:flex-start;color:var(--green-2);font-size:14px;background:var(--green-tint);border-radius:12px;padding:12px 14px}
+.onb-ok svg{flex-shrink:0;margin-top:2px}
+@media (max-width:760px){
+  .onboarding{padding:16px 12px}
+  .onb-card{padding:20px 16px 18px;border-radius:20px}
+  .onb-steps li{font-size:0;padding:3px}.onb-steps li.now{font-size:12px;padding-right:10px}
+  .onb-body>h1{font-size:26px}
+  .onb-choices{grid-template-columns:1fr}
+  .onb-gen{grid-template-columns:1fr 1fr}
+  .onb-rows .onb-short{flex-basis:76px}
+  .onb-foot .primary{flex:1;justify-content:center}
+}
