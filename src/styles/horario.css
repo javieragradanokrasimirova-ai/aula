@@ -1,0 +1,82 @@
+/* El horario de la portada (día y semana). */
+/* ---------- Horario ---------- */
+.schedule{position:relative;border:1px solid var(--line);border-radius:var(--r-lg);background:var(--surface);padding:22px 26px 20px;margin-bottom:22px;box-shadow:var(--sh-1);animation:rise var(--t-slow) var(--ease-out) both;overflow:hidden}
+.schedule.placeholder{min-height:196px;animation:none}
+.schedule.in-class{background:radial-gradient(120% 140% at 0% 0%,var(--green-tint),var(--surface) 55%)}
+.schedule>header{display:flex;justify-content:space-between;gap:18px;align-items:flex-start}
+.sched-now{min-width:0}
+.sched-tag{display:inline-flex;align-items:center;gap:8px;font-size:12px;font-weight:600;letter-spacing:.6px;text-transform:uppercase;color:var(--green-2)}
+.sched-tag em{font-style:normal;text-transform:none;letter-spacing:0;font-weight:500;color:var(--muted);font-variant-numeric:tabular-nums}
+.sched-tag em::before{content:'·';margin-right:8px;color:var(--faint)}
+.sched-pulse{width:8px;height:8px;border-radius:50%;background:var(--faint);position:relative}
+.sched-pulse.on{background:var(--leaf)}
+.sched-pulse.on::after{content:'';position:absolute;inset:-4px;border-radius:50%;border:2px solid var(--leaf);animation:sched-ping 2s var(--ease-out) infinite}
+@keyframes sched-ping{from{transform:scale(.5);opacity:.9}to{transform:scale(1.6);opacity:0}}
+.sched-now h2{font-size:22px;font-weight:600;letter-spacing:-.4px;margin:6px 0 3px;line-height:1.25;text-wrap:balance}
+.sched-now p{margin:0;font-size:14px;color:var(--muted)}
+.sched-side{display:flex;flex-direction:column;align-items:flex-end;gap:10px;flex-shrink:0}
+.sched-clock{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:600;color:var(--ink-2);font-variant-numeric:tabular-nums}
+.sched-clock svg{color:var(--faint)}
+.sched-switch{display:flex;gap:2px;background:#ecefe7;padding:3px;border-radius:11px}
+.sched-switch button{display:flex;align-items:center;gap:6px;min-height:32px;padding:0 12px;font-size:13px;font-weight:500;color:var(--muted);border-radius:8px;transition:background var(--t) var(--ease-out),color var(--t),box-shadow var(--t)}
+.sched-switch button:hover{color:var(--ink)}
+.sched-switch button[aria-pressed=true]{background:#fff;color:var(--green);box-shadow:var(--sh-1)}
+
+.sched-day{margin-top:16px}
+.sched-label{font-size:12px;color:var(--faint);font-weight:500;margin-bottom:30px}
+.track{position:relative;display:flex;height:62px}
+.track-cell,.week-cell{animation:rise var(--t-slow) var(--ease-out) both;animation-delay:calc(var(--i,0)*30ms)}
+.track-cell{flex-basis:0;min-width:0;padding:0 2px}
+.track-ends{display:flex;justify-content:space-between;font-size:11px;color:var(--faint);margin-top:6px;padding:0 2px;font-variant-numeric:tabular-nums}
+.slot{position:relative;display:flex;flex-direction:column;justify-content:center;gap:1px;width:100%;height:100%;padding:0 10px;border-radius:10px;background:var(--tint);text-align:left;overflow:hidden;transition:opacity var(--t-slow),filter var(--t-slow),transform var(--t) var(--ease-out),box-shadow var(--t)}
+.slot b{position:relative;font-size:13px;font-weight:700;letter-spacing:.2px;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.slot small{position:relative;font-size:11px;color:var(--ink-2);opacity:.75;font-variant-numeric:tabular-nums}
+.slot.break{background:repeating-linear-gradient(135deg,#f1f3ee 0 6px,#e8ece4 6px 12px)}
+.slot.break b{font-weight:500;color:var(--muted);font-size:11px}
+.slot.break small{display:none}
+.slot.past{opacity:.42;filter:saturate(.5)}
+.slot.now{box-shadow:0 0 0 1.5px var(--green-2),var(--sh-2);opacity:1}
+.slot.now::before{content:'';position:absolute;inset:0 auto 0 0;width:calc(var(--p)*100%);background:rgb(41 79 61/.13);transition:width 1s linear}
+.slot.now.break::before{background:rgb(41 79 61/.08)}
+button.slot:active{transform:scale(.97)}
+@media (hover:hover){button.slot:hover{box-shadow:0 0 0 1.5px var(--line-2),var(--sh-2);transform:translateY(-2px)}button.slot.now:hover{box-shadow:0 0 0 1.5px var(--green-2),var(--sh-2)}}
+.needle{position:absolute;top:-8px;bottom:-8px;left:calc(var(--x)*100%);width:2px;margin-left:-1px;background:var(--green);border-radius:2px;pointer-events:none;transition:left 1s linear;z-index:1}
+.needle::after{content:'';position:absolute;bottom:-3px;left:-3px;width:8px;height:8px;border-radius:50%;background:var(--green)}
+.needle i{position:absolute;top:-22px;left:50%;transform:translateX(-50%);font-style:normal;font-size:11px;font-weight:600;color:#fff;background:var(--green);padding:2px 7px;border-radius:6px;white-space:nowrap;font-variant-numeric:tabular-nums}
+
+.week{--wh:30px;--wr:50px;--wb:22px;--wt:52px;display:grid;grid-template-columns:52px repeat(5,minmax(0,1fr));gap:4px;margin-top:18px}
+.week-day{grid-row:1;align-self:center;justify-self:center;font-size:12px;font-weight:600;color:var(--muted);padding:3px 10px;border-radius:99px}
+.week-day span{display:inline}
+.week-day.today{background:var(--green);color:#fff}
+.week-time{grid-column:1;display:flex;flex-direction:column;justify-content:center;font-size:11px;font-weight:600;color:var(--ink-2);font-variant-numeric:tabular-nums}
+.week-time small{font-size:10px;font-weight:500;color:var(--faint)}
+.week-time.break{font-weight:500;color:var(--faint);font-size:10px}
+.week-cell{min-width:0}
+.week .slot{padding:0 8px;border-radius:8px}
+.week .slot.break b{display:none}
+.week .slot.now::before{inset:0 0 auto 0;width:auto;height:calc(var(--p)*100%);transition:height 1s linear}
+.week .slot.now::after{content:'';position:absolute;left:0;right:0;top:calc(var(--p)*100%);height:2px;margin-top:-1px;background:var(--green);transition:top 1s linear}
+
+@media(max-width:760px){
+  .schedule{padding:18px 16px 16px;margin-bottom:18px}
+  .schedule.placeholder{min-height:210px}
+  .schedule>header{flex-direction:column;gap:12px}
+  .sched-side{flex-direction:row;align-items:center;justify-content:space-between;width:100%}
+  .sched-now h2{font-size:19px}
+  .sched-now p{font-size:13px}
+  .track{height:56px}
+  .track-cell{padding:0 1.5px}
+  .slot{padding:0 6px;border-radius:8px}
+  .slot b{font-size:11px;letter-spacing:0}
+  .slot small{font-size:10px}
+  .track .slot.break b{display:none}
+  .week{--wh:28px;--wr:46px;--wb:18px;--wt:38px;grid-template-columns:38px repeat(5,minmax(0,1fr));gap:3px}
+  .week-day{padding:3px 7px}
+  .week-day span{display:none}
+  .week .slot{padding:0 5px}
+  .week .slot b{font-size:10.5px}
+  .week .slot small{display:none}
+  .week-time{font-size:10px}
+  .week-time small{display:none}
+}
+@media (prefers-reduced-motion:reduce){.sched-pulse.on::after{animation:none}}

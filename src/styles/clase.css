@@ -1,0 +1,47 @@
+/* Una clase abierta: herramientas, notas, zona para soltar y lista de archivos. */
+/* ---------- Detalle de clase ---------- */
+.back{display:inline-flex;align-items:center;gap:4px;font-size:14px;color:var(--muted);margin:-6px 0 18px -8px;padding:6px 10px 6px 6px;border-radius:9px;transition:background var(--t-fast),color var(--t-fast)}
+.back:hover{background:#eef1ea;color:var(--ink)}
+.back svg{transition:transform var(--t) var(--ease-out)}
+.back:hover svg{transform:translateX(-3px)}
+.detail-tools{display:flex;gap:10px;flex-wrap:wrap;margin:-8px 0 24px}
+.detail-tools button{display:inline-flex;gap:8px;align-items:center;border:1px solid var(--line);border-radius:10px;min-height:40px;padding:0 14px;background:var(--surface);font-size:13px;font-weight:500;color:var(--ink-2);box-shadow:var(--sh-1);transition:background var(--t-fast),border-color var(--t-fast),transform var(--t-fast)}
+.detail-tools button:hover:not(:disabled){border-color:var(--line-2);background:var(--surface-2)}
+.detail-tools button:active:not(:disabled){transform:scale(.97)}
+.detail-tools .danger{color:var(--danger)}
+.detail-tools .danger:hover{background:var(--danger-soft)!important;border-color:#efcbc3!important}
+.notes{border:1px solid var(--line);border-radius:var(--r-lg);padding:18px 20px;background:var(--surface);margin-bottom:24px;box-shadow:var(--sh-1)}
+.notes h3{font-size:14px;margin:0 0 6px}
+.notes p{white-space:pre-wrap;font-size:14px;line-height:1.7;color:var(--ink-2);margin:0}
+.dropzone{border:1.5px dashed #bccbb3;background:var(--green-tint);border-radius:var(--r-lg);display:flex;flex-direction:column;align-items:center;gap:6px;padding:26px 20px;text-align:center;transition:background var(--t),border-color var(--t),transform var(--t) var(--ease-out)}
+.dropzone-icon{display:grid;place-items:center;width:44px;height:44px;border-radius:12px;background:#fff;color:var(--green-2);box-shadow:var(--sh-1);margin-bottom:4px;transition:transform var(--t) var(--spring)}
+.dropzone b{font-size:15px}
+.dropzone span{font-size:14px;color:var(--muted)}
+.dropzone button{text-decoration:underline;text-underline-offset:3px;color:var(--green);font-weight:600}
+.dropzone small{font-size:12px;color:var(--faint);max-width:440px}
+.dropzone.drag{background:#e2eedb;border-color:var(--green-2);transform:scale(1.01)}
+.dropzone.drag .dropzone-icon{transform:translateY(-4px) scale(1.08)}
+.section-title{margin:28px 0 14px}
+.filelist{display:grid;gap:8px}
+.filelist-empty{color:var(--muted);font-size:14px;margin:4px 2px}
+.filerow{display:flex;align-items:center;gap:12px;background:var(--surface);border:1px solid var(--line);padding:10px 10px 10px 12px;border-radius:14px;min-width:0;box-shadow:var(--sh-1);animation:rise var(--t-slow) var(--ease-out) both;animation-delay:calc(var(--i,0)*30ms);transition:border-color var(--t),box-shadow var(--t)}
+.filerow:hover{border-color:var(--line-2)}
+.fileicon{display:grid;place-items:center;width:44px;height:44px;border-radius:11px;flex-shrink:0;background:#edf0e8;color:var(--ink-2);transition:transform var(--t) var(--spring)}
+.fileicon:hover{transform:scale(1.06)}
+.fileicon.audio{background:var(--audio);color:var(--audio-ink)}
+.fileicon.image{background:var(--image);color:var(--image-ink)}
+.fileicon.doc{background:var(--doc);color:var(--doc-ink)}
+.fileicon.upload{background:var(--green-soft);color:var(--green-2);cursor:default}
+.filename{text-align:left;flex:1;min-width:0;padding:4px 0}
+.filename b{display:block;font-size:14px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.filename small{display:block;font-size:12.5px;color:var(--muted);margin-top:1px;font-variant-numeric:tabular-nums}
+.file-actions{display:flex;gap:2px;flex-shrink:0}
+.filerow.uploading{background:var(--surface-2);border-style:dashed}
+.filerow.error{border-color:#efcbc3;background:var(--danger-soft)}
+.filerow.error small{color:var(--danger)}
+
+/* Barras de progreso: se animan con transform, sin recalcular el diseño. */
+.bar{display:block;height:4px;border-radius:4px;background:#e4eadf;overflow:hidden;margin-top:7px}
+.bar i{display:block;height:100%;background:linear-gradient(90deg,var(--green-2),#5b8a63);border-radius:inherit;transform-origin:left;transition:transform 260ms linear}
+.bar.indeterminate i{width:40%;transform:none!important;animation:indeterminate 1.1s var(--ease-out) infinite}
+@keyframes indeterminate{from{translate:-100% 0}to{translate:250% 0}}
