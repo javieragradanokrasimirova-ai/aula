@@ -1,46 +1,13 @@
-
-import {useCallback,useEffect,useMemo,useState} from 'react';
+// Vista del calendario: el mes, lo de cada día, las tareas pendientes y conectar Moodle.
+import {useMemo,useState} from 'react';
 import {AlertCircle,ArrowUpRight,Check,ChevronDown,ChevronLeft,ChevronRight,Link2,Loader2,Pencil,Plus,RotateCw,Settings2,Trash2,Unlink,Upload,X,Zap} from 'lucide-react';
-import {MOODLE_PROXY,SYNC_EVERY} from './moodle';
+import {MOODLE_PROXY} from './moodle';
 import {Modal} from './modal';
 import {usePlan} from './plan';
-import {useStore,type CalendarAction,type CalendarResult,type CalendarState as State} from './store';
+import type {CalendarAction,CalendarResult} from './store';
 import {readPref,writePref} from './prefs';
 import {keyOf,dayOf,fromKey,timeOf,isTodo,due,type CalEvent,type Kind} from './ics';
-export {keyOf,dayOf,isTodo,due} from './ics';
-
-// feed: cuándo importaste por última vez el calendario de Moodle (null si nunca) y si se actualiza solo.
-export type Feed=State['feed'];
-
-// Datos del calendario (salen del mismo aula.json que lo demás).
-export function useCalendar(){
-  const store=useStore(),call=(b:CalendarAction)=>store.calendar(b);
-  const [state,setState]=useState<State|null>(()=>store.calendarState()),[syncing,setSyncing]=useState(false);
-  const run=useCallback(async(body:CalendarAction)=>{const d=await call(body);if(d.events)setState({events:d.events,feed:d.feed??null});return d},[store]);
-  // Cambio al instante en pantalla; si falla, se deshace.
-  const mark=useCallback(async(id:string,patch:{priority?:number;done?:boolean})=>{
-    let before:State|null=null;
-    setState(s=>{before=s;return s&&{...s,events:s.events.map(e=>e.id===id?{...e,...('priority' in patch?{priority:patch.priority!}:{}),...('done' in patch?{done:patch.done?1:0}:{})}:e)}});
-    try{await call({action:'mark',id,...patch})}catch(e){setState(before);throw e}
-  },[]);
-  const reload=useCallback(async()=>{setState(store.calendarState())},[store]);
-  // Moodle conectado: se trae solo al abrir Aula (si hace más de 3 h) y cada 3 h mientras está abierta.
-  const [syncError,setSyncError]=useState('');
-  const sync=useCallback(async(quiet=false)=>{
-    setSyncing(true);if(!quiet)setSyncError('');
-    try{const d=await run({action:'sync'});setSyncError('');return d}catch(e){setSyncError((e as Error).message);if(!quiet)throw e}finally{setSyncing(false)}
-  },[run]);
-  useEffect(()=>{
-    let busy=false;
-    const check=()=>{const m=store.doc.moodle;if(busy||!m.url||!MOODLE_PROXY||document.visibilityState!=='visible')return;
-      if(m.importedAt&&Date.now()-Date.parse(m.importedAt)<SYNC_EVERY)return;
-      busy=true;sync(true).finally(()=>{busy=false})};
-    const first=setTimeout(check,2500),t=setInterval(check,10*60e3);document.addEventListener('visibilitychange',check);
-    return()=>{clearTimeout(first);clearInterval(t);document.removeEventListener('visibilitychange',check)};
-  },[store,sync]);
-  return {events:state?.events??[],feed:state?.feed??null,loaded:!!state,syncing,syncError,sync,run,mark,reload};
-}
-export type Calendar=ReturnType<typeof useCalendar>;
+import type {Calendar,Feed} from './calendar-data';
 
 // ---------- Fechas ----------
 const WEEKDAYS=['L','M','X','J','V','S','D'];
