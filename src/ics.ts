@@ -56,11 +56,6 @@ export function parseICS(text:string,subjectOf:(category:string)=>string=DEFAULT
   return out;
 }
 
-// La URL de Moodle solo se acepta si es https y apunta a la exportación del calendario.
-export function validFeedURL(raw:string){
-  try{const u=new URL(raw.trim());return u.protocol==='https:'&&/\/calendar\/export_execute\.php$/.test(u.pathname)&&u.searchParams.has('authtoken')?u:null}catch{return null}
-}
-
 // ---------- Fechas de los eventos (las usan el calendario y el asistente) ----------
 const pad=(n:number)=>String(n).padStart(2,'0');
 export const keyOf=(d:Date)=>`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;

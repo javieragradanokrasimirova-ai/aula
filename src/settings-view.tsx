@@ -1,10 +1,10 @@
 
 // Pantalla de Ajustes: curso, asignaturas (con Moodle y el dinosaurio) y horario.
 // Se edita una copia; nada se guarda hasta pulsar «Guardar cambios» (salvo «mover sus clases», que es inmediato).
-import {useEffect,useMemo,useRef,useState} from 'react';
+import {useEffect,useMemo,useState} from 'react';
 import {useInstall,isInstalled,IOS_STEPS} from './install';
-import {Download,Smartphone,FolderInput,LogOut,AlertCircle,ArrowDown,ArrowRightLeft,ArrowUp,ArrowUpRight,Check,ChevronDown,Coffee,Eraser,Link2,Loader2,Plus,Trash2,X} from 'lucide-react';
-import {DAYS,PALETTE,hhmm,newId,validate,type Period,type Settings,type Subject} from './settings';
+import {Download,Smartphone,FolderInput,LogOut,AlertCircle,ArrowDown,ArrowRightLeft,ArrowUp,ArrowUpRight,Check,ChevronDown,Coffee,Link2,Loader2,Plus,Trash2,X} from 'lucide-react';
+import {PALETTE,hhmm,newId,validate,type Period,type Settings,type Subject} from './settings';
 import type {Lesson} from './types';
 import WeekPainter from './week-painter';
 import type {CalEvent} from './ics';

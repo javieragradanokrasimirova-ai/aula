@@ -1,6 +1,6 @@
 import {useCallback,useEffect,useMemo,useRef,useState} from 'react';
 import {createPortal} from 'react-dom';
-import {BookOpen,LayoutGrid,Folder,Plus,Search,ArrowUpRight,Upload,FileAudio,FileText,Image as ImageIcon,Download,X,ChevronLeft,ChevronDown,Lock,HardDrive,Trash2,Pencil,Loader2,Check,FolderOpen,RotateCw,AlertCircle,FileArchive,CalendarDays,Settings2,LogOut,FolderInput} from 'lucide-react';
+import {BookOpen,LayoutGrid,Folder,Plus,Search,ArrowUpRight,Upload,FileAudio,FileText,Image as ImageIcon,Download,X,ChevronLeft,ChevronDown,Lock,HardDrive,Trash2,Pencil,Loader2,Check,FolderOpen,RotateCw,AlertCircle,FileArchive,CalendarDays,Settings2,LogOut} from 'lucide-react';
 import {useStore} from './store';
 import ImportView from './import-view';
 import {entryBlob,type ImportPlan} from './import';
@@ -68,7 +68,6 @@ export default function Archive({initial,settings:initialSettings,onSignOut,star
   const openLesson=(id:string)=>{history.pushState({lesson:id},'','#'+id);setDir(1);setSelected(id);setSection('archive');scrollTo({top:0})};
   const openCalendar=()=>{if(section==='calendar'&&!selected)return;history.pushState({calendar:true},'','#calendario');setDir(1);setSelected(null);setSection('calendar');scrollTo({top:0})};
   const openSettings=()=>{if(section==='settings'&&!selected)return;history.pushState({settings:true},'','#ajustes');setDir(1);setSelected(null);setSection('settings');scrollTo({top:0})};
-  const leaveCalendar=()=>{setDir(-1);if(history.state?.calendar||history.state?.settings)history.back();else setSection('archive')};
   const backToList=()=>{setDir(-1);if(history.state?.lesson)history.back();else setSelected(null)};
   const openViewer=(items:Item[],start:number)=>{history.pushState({lesson:selected,viewer:true},'');setViewer({items,start})};
   const closeViewer=()=>{if(history.state?.viewer)history.back();else setViewer(null)};

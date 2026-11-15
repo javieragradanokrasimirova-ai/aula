@@ -18,7 +18,7 @@ export function kv(name:string,stores:string[]){
     clear:async(store:string)=>{await tx(await db,store,'readwrite',s=>{s.clear()})},
   };
 }
-// Lo que el service worker necesita saber para servir tus archivos: de dónde salen y con qué permiso.
+// Lo que el service worker necesita saber para servir tus archivos: de dónde salen y con qué permiso
+// ({kind:'demo'} o {kind:'drive',token,expires}).
 export const SESSION_DB='aula-session';
 export const session=()=>kv(SESSION_DB,['session']);
-export type SwSession={kind:'demo'}|{kind:'drive';token:string;expires:number};
