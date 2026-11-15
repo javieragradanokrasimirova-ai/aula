@@ -1,6 +1,7 @@
 import {createRoot} from 'react-dom/client';
 import App from './app';
 import './globals.css';
+import './install'; // escucha desde ya el aviso de «se puede instalar»
 
 // El service worker sirve tus archivos (Drive o modo demo) y arma los ZIP. Se espera un momento a
 // que tome el control de la página antes de mostrar nada, para que los archivos se vean a la primera.

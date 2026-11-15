@@ -17,7 +17,8 @@ declare const google:any;
 
 // ---------- Inicio de sesión (Google Identity Services) ----------
 type Token={value:string;expires:number};
-let token:Token|null=(()=>{try{const t=JSON.parse(sessionStorage.getItem(KEY)||'null');return t&&t.expires>Date.now()+60000?t:null}catch{return null}})();
+// Se guarda en este dispositivo (no solo en la pestaña): si cierras Aula y vuelves antes de la hora, entras directo.
+let token:Token|null=(()=>{try{sessionStorage.removeItem(KEY);const t=JSON.parse(localStorage.getItem(KEY)||'null');return t&&t.expires>Date.now()+60000?t:null}catch{return null}})();
 const listeners=new Set<(ok:boolean)=>void>();
 export const onTokenChange=(fn:(ok:boolean)=>void)=>{listeners.add(fn);return()=>{listeners.delete(fn)}};
 export const hasToken=()=>!!token&&token.expires>Date.now()+30000;
@@ -42,19 +43,19 @@ export async function signIn(hint?:string):Promise<void>{
 }
 function setToken(t:Token|null){
   token=t;
-  try{if(t)sessionStorage.setItem(KEY,JSON.stringify(t));else sessionStorage.removeItem(KEY)}catch{}
+  try{if(t)localStorage.setItem(KEY,JSON.stringify(t));else localStorage.removeItem(KEY)}catch{}
   // El service worker necesita el permiso para servirte los archivos.
   (t?session().set('session','current',{kind:'drive',token:t.value,expires:t.expires}):session().del('session','current')).catch(()=>{});
   for(const fn of listeners)fn(!!t);
 }
-// Caduca a la hora: se avisa para que vuelvas a pulsar «Continuar con Google».
+// Caduca a la hora: se avisa para que la renueves.
 setInterval(()=>{if(token&&!hasToken())setToken(null)},30000);
 
 // ---------- Llamadas a Drive ----------
 async function call(url:string,init:RequestInit={},raw=false):Promise<any>{
-  if(!hasToken())throw new UserError('Tu sesión de Google ha caducado. Pulsa «Continuar con Google» y vuelve a intentarlo.');
+  if(!hasToken())throw new UserError('Tu sesión de Google ha caducado: vuelve a entrar y repítelo.');
   const r=await fetch(url,{...init,headers:{...init.headers,Authorization:'Bearer '+token!.value}});
-  if(r.status===401){setToken(null);throw new UserError('Tu sesión de Google ha caducado. Pulsa «Continuar con Google» y vuelve a intentarlo.')}
+  if(r.status===401){setToken(null);throw new UserError('Tu sesión de Google ha caducado: vuelve a entrar y repítelo.')}
   if(r.status===403||r.status===429){const d=await r.json().catch(()=>({}));const reason=d?.error?.errors?.[0]?.reason;
     if(reason==='storageQuotaExceeded')throw new UserError('Tu Google Drive está lleno. Libera espacio y vuelve a intentarlo.');
     throw new Error('Google Drive está ocupado ahora mismo. Inténtalo en un momento.')}
@@ -144,7 +145,7 @@ export async function resumable(file:Blob,meta:{name:string;type:string},parent:
 // Envía un trozo. Drive responde «308» (sigue) con lo recibido, o 200/201 con el archivo ya creado.
 function sendChunk(uri:string,blob:Blob,start:number,total:number,onProgress:(n:number)=>void,signal:AbortSignal){
   return new Promise<{id?:string;offset?:number}>((ok,fail)=>{
-    if(!hasToken())return fail(new UserError('Tu sesión de Google ha caducado. Pulsa «Continuar con Google» y luego «Reintentar».'));
+    if(!hasToken())return fail(new UserError('Tu sesión de Google ha caducado: pulsa «Renovar sesión» y luego «Reintentar».'));
     const x=new XMLHttpRequest();x.open('PUT',uri);
     x.setRequestHeader('Content-Range',`bytes ${start}-${start+blob.size-1}/${total}`);
     x.setRequestHeader('X-Guploader-No-308','yes'); // así el «308» llega como 200 con una cabecera y el navegador no lo trata como redirección
@@ -154,7 +155,7 @@ function sendChunk(uri:string,blob:Blob,start:number,total:number,onProgress:(n:
       const override=x.getResponseHeader('X-Http-Status-Code-Override');
       if(x.status===308||override==='308'){const m=/bytes=0-(\d+)/.exec(x.getResponseHeader('Range')||'');return ok({offset:m?Number(m[1])+1:start+blob.size})}
       if(x.status===200||x.status===201){try{return ok({id:JSON.parse(x.responseText).id})}catch{return fail(new Error('Respuesta rara de Google Drive.'))}}
-      if(x.status===401)return fail(new UserError('Tu sesión de Google ha caducado. Pulsa «Continuar con Google» y luego «Reintentar».'));
+      if(x.status===401)return fail(new UserError('Tu sesión de Google ha caducado: pulsa «Renovar sesión» y luego «Reintentar».'));
       if(x.status===404||x.status===410)return fail(Object.assign(new Error('La subida ha caducado.'),{expired:true}));
       fail(new Error('Error de conexión ('+x.status+').'))};
     x.onerror=()=>{signal.removeEventListener('abort',abort);fail(new Error('Se ha perdido la conexión.'))};

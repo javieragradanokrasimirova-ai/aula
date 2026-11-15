@@ -15,6 +15,10 @@ try{
   const run=async expr=>{const r=await send('Runtime.evaluate',{expression:`(async()=>{${expr}})()`,awaitPromise:true,returnByValue:true});if(r.result.exceptionDetails)throw Error(JSON.stringify(r.result.exceptionDetails).slice(0,600));return r.result.result.value};
   await send('Page.navigate',{url:URL0});await sleep(3500);
   assert.equal(await run(`return !!navigator.serviceWorker.controller`),true,'el service worker controla la página');
+  // Un evento suelto en el modo demo: así no sale la bienvenida de la primera vez y se va directo a Aula.
+  await run(`await new Promise((ok,fail)=>{const r=indexedDB.open('aula-demo',1);r.onupgradeneeded=()=>{r.result.createObjectStore('doc');r.result.createObjectStore('blobs')};r.onerror=fail;
+    r.onsuccess=()=>{const t=r.result.transaction('doc','readwrite');t.objectStore('doc').put({format:'aula',version:1,lessons:[],files:[],moodle:{importedAt:null},
+      events:[{id:'e1',uid:null,title:'Evento de prueba',description:'',start:'2030-01-01',end:null,allDay:1,kind:'event',subject:'',priority:1,done:0}]},'aula');t.oncomplete=()=>{r.result.close();ok()}}})`);
   await run(`[...document.querySelectorAll('button')].find(b=>b.textContent.includes('Probar sin cuenta')).click()`);await sleep(1500);
   // Crea una clase con un archivo binario usando la propia interfaz.
   const out=await run(`

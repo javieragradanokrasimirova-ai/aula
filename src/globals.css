@@ -736,7 +736,8 @@ button.slot:active{transform:scale(.97)}
 .modal label.import-btn{flex-direction:row;align-items:center;gap:7px;margin:0 auto 0 0;cursor:pointer;font-size:14px;font-weight:500;padding:0 12px}
 .danger-text{color:var(--danger)}
 
-@media(max-width:1100px){.cal-layout{grid-template-columns:1fr}.todos{position:static}.todo-list{max-height:none}}
+/* En una columna la lista de tareas no lleva scroll propio: con el dedo, un scroll dentro de otro «atrapa» el gesto. */
+@media(max-width:1100px){.cal-layout{grid-template-columns:1fr}.todos{position:static}.todo-list{max-height:none;overflow:visible;overscroll-behavior:auto}.todo-desc{max-height:none;overflow:visible}}
 @media(max-width:760px){
   .next-due{padding:12px 14px;gap:10px;margin:-4px 0 18px;flex-wrap:wrap}
   .next-due-icon,.next-due-arrow{display:none}
@@ -758,6 +759,7 @@ button.slot:active{transform:scale(.97)}
   .day-detail .time{width:62px;font-size:12px}
   .todos{padding:16px 10px 8px}
   .todo{padding:10px 4px 10px 6px}
+  .calendar-page{padding-bottom:64px} /* que el dinosaurio no tape la última tarea */
   .prio{padding:0 8px;min-height:34px}
   .subject-pick button{min-height:38px}
 }
@@ -1033,3 +1035,40 @@ button.slot:active{transform:scale(.97)}
 .modal label.primary{color:#fff;font-weight:600;margin:0;padding:0 18px;min-height:44px}
 .modal label.primary:hover{color:#fff}
 .viewer-text iframe{background:#fff;color-scheme:light}
+
+/* ---------- Conectando con Google ---------- */
+.connecting{position:fixed;inset:0;z-index:90;display:grid;place-items:center;padding:16px;background:rgb(246 247 242/.86);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);animation:fade-in var(--t) var(--ease-out) both}
+.connecting-card{width:min(420px,100%);background:var(--surface);border:1px solid var(--line);border-radius:24px;padding:30px 28px 24px;box-shadow:var(--sh-3);text-align:center;animation:modal-in var(--t-slow) var(--spring) both}
+.connecting-mark{position:relative;display:inline-grid;place-items:center;width:52px;height:54px;border-radius:15px;background:var(--green);color:#fff;margin-bottom:16px;box-shadow:inset 0 -2px 0 rgb(0 0 0/.12);animation:connecting-bob 1.6s ease-in-out infinite}
+@keyframes connecting-bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px) rotate(-3deg)}}
+.connecting h2{font-family:var(--serif);font-weight:400;font-size:25px;letter-spacing:-.3px;margin:0 0 8px;line-height:1.2}
+.connecting-now{font-size:14px;color:var(--muted);margin:0 0 18px;min-height:42px;line-height:1.5}
+.connecting-steps{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:4px;text-align:left}
+.connecting-steps li{display:flex;align-items:center;gap:12px;padding:9px 12px;border-radius:12px;font-size:14px;color:var(--faint);transition:background var(--t),color var(--t)}
+.connecting-steps li.now{background:var(--green-tint);color:var(--ink);font-weight:600}
+.connecting-steps li.done{color:var(--ink-2)}
+.connecting-dot{display:grid;place-items:center;width:26px;height:26px;border-radius:50%;flex-shrink:0;font-size:12px;font-weight:700;border:1.5px solid var(--line-2);color:var(--faint);background:#fff}
+.connecting-steps li.now .connecting-dot{border-color:var(--green-2);color:var(--green-2)}
+.connecting-steps li.done .connecting-dot{background:var(--green);border-color:var(--green);color:#fff;animation:pop var(--t-slow) var(--spring)}
+.connecting-spin{color:var(--green-2);margin:2px auto 4px;display:block}
+.connecting-who{display:block;margin-top:16px;font-size:12.5px;color:var(--faint);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+@media (prefers-reduced-motion:reduce){.connecting-mark{animation:none}}
+
+.welcome-account{justify-content:flex-start;text-align:left;padding:8px 16px 8px 8px;min-height:60px}
+.welcome-account>span:not(.welcome-avatar){flex:1;min-width:0;display:flex;flex-direction:column}
+.welcome-account b{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.welcome-account small{font-size:12.5px;font-weight:400;opacity:.8;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.welcome-main .welcome-avatar{width:42px;height:42px;border-radius:50%;flex-shrink:0;display:grid;place-items:center;background:var(--green-soft);color:var(--green);font-weight:700;object-fit:cover;padding:0}
+.welcome-other{width:100%;margin-top:8px;display:flex;gap:9px;align-items:center;justify-content:center;border:1px solid var(--line);font-size:14px}
+.welcome-account>svg:last-child{background:none;padding:0;flex-shrink:0}
+
+/* ---------- Instalar como app ---------- */
+.install-bar{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);z-index:59;display:flex;align-items:center;gap:12px;width:min(520px,calc(100vw - 24px));padding:10px 8px 10px 12px;border-radius:16px;background:var(--surface);border:1px solid var(--line);color:var(--ink-2);font-size:14px;line-height:1.4;box-shadow:var(--sh-3);animation:toast-in var(--t-slow) var(--spring) both}
+.install-bar img{border-radius:9px;flex-shrink:0}
+.install-bar span{flex:1;min-width:0}
+.install-bar b{color:var(--ink)}
+.install-bar .primary{min-height:38px;font-size:13px;flex-shrink:0}
+@media (max-width:760px){.install-bar{bottom:calc(84px + env(safe-area-inset-bottom))}}
+.set-install{display:flex;gap:9px;align-items:flex-start;font-size:13.5px;line-height:1.5;color:var(--ink-2);background:var(--green-tint);border-radius:12px;padding:10px 12px;margin:0 0 12px}
+.set-install svg{flex-shrink:0;margin-top:2px;color:var(--green-2)}
+.set-install.done{color:var(--muted);background:transparent;padding:0 2px}

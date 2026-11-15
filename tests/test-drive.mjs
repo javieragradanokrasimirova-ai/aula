@@ -6,7 +6,7 @@ const fix=t=>t.replace(/from '\.\/(config|doc|idb|store|settings|ics|types)'/g,"
 for(const m of ['config','doc','idb','store','settings','ics','types','drive'])writeFileSync(`.test-runtime/${m}.mjs`,ts.transpile(fix(readFileSync(`src/${m}.ts`,'utf8')),{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.ESNext}));
 
 // Navegador mínimo: sesión guardada, IndexedDB que no hace nada, fetch para abrir la subida y XHR para los trozos.
-const store=new Map();globalThis.sessionStorage={getItem:k=>store.get(k)??null,setItem:(k,v)=>store.set(k,v),removeItem:k=>store.delete(k)};
+const store=new Map();globalThis.localStorage={getItem:k=>store.get(k)??null,setItem:(k,v)=>store.set(k,v),removeItem:k=>store.delete(k)};globalThis.sessionStorage={getItem:()=>null,setItem(){},removeItem(){}};
 globalThis.indexedDB={open(){const r={};setTimeout(()=>r.onerror?.());return r}};
 const setToken=ms=>store.set('aula-google-token',JSON.stringify({value:'tok',expires:Date.now()+ms}));
 setToken(3600e3);
@@ -63,7 +63,7 @@ reset({});const ac=new AbortController();ac.abort();t=opts({signal:ac.signal});a
 reset({});const realFetch=globalThis.fetch;let calls=0;globalThis.fetch=async()=>{calls++;return new Response('',{status:401})};
 const {onTokenChange,hasToken}=await import('../.test-runtime/drive.mjs');let notified=null;onTokenChange(ok=>notified=ok);
 t=opts();await assert.rejects(resumable(file,{name:'a',type:''},'c',t.o),/sesión de Google ha caducado/);
-assert.equal(hasToken(),false);assert.equal(notified,false,'la web se entera (y enseña «Continuar con Google»)');
+assert.equal(hasToken(),false);assert.equal(notified,false,'la web se entera (y enseña «Renovar sesión»)');
 await assert.rejects(resumable(file,{name:'a',type:''},'c',opts().o),/sesión de Google ha caducado/);assert.equal(calls,1,'sin permiso ya no se intenta');
 globalThis.fetch=realFetch;
 console.log('PASS Drive: subida en trozos, corte a mitad, sesión de subida caducada, reanudar, ya completa, sesión de Google caducada y cancelar');

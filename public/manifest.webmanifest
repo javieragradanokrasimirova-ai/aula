@@ -1,0 +1,19 @@
+{
+  "id": "./",
+  "name": "Aula · Tu archivo de clases",
+  "short_name": "Aula",
+  "description": "Tus audios, fotos y apuntes de clase, tu horario y tus entregas en un sitio. Tus datos se guardan en tu propio Google Drive.",
+  "lang": "es",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#f6f7f2",
+  "theme_color": "#f6f7f2",
+  "categories": ["education", "productivity"],
+  "icons": [
+    {"src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any"},
+    {"src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any"},
+    {"src": "icons/maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable"}
+  ]
+}
