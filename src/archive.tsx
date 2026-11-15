@@ -1,21 +1,24 @@
+// Aula una vez dentro: guarda el estado de la web (clases, archivos, ajustes, sección abierta, ZIP, avisos
+// y el ánimo del dinosaurio) y monta la barra lateral, la sección que toca y los paneles flotantes.
 import {useCallback,useEffect,useMemo,useRef,useState} from 'react';
-import {BookOpen,Folder,Plus,Search,ArrowUpRight,Upload,FileAudio,FileText,Image as ImageIcon,Download,X,ChevronLeft,ChevronDown,Lock,HardDrive,Trash2,Pencil,Loader2,Check,FolderOpen,AlertCircle,CalendarDays,Settings2} from 'lucide-react';
+import {AlertCircle,Check,Lock} from 'lucide-react';
 import {useStore} from './store';
 import ImportView from './import-view';
 import Sidebar from './sidebar';
 import {entryBlob,type ImportPlan} from './import';
 import {saveLesson as newLesson} from './doc';
-import {bytes,fileURL,kindOf,plural,viewableImage,type Item,type Lesson} from './types';
+import {kindOf,plural,type Item,type Lesson} from './types';
 import {DEFAULT_SETTINGS,makePlan,norm,type Settings} from './settings';
 import {PlanContext} from './plan';
 import SettingsView from './settings-view';
 import {useUploads} from './uploads';
 import LessonForm from './lesson-form';
 import AskDialog,{type Ask} from './ask-dialog';
-import {UploadPanel,UploadRow,ZipCard,type Zip} from './dock';
-import {Kind,dateLabel,kindLabel} from './lesson-bits';
+import {UploadPanel,ZipCard,type Zip} from './dock';
+import {dateLabel} from './lesson-bits';
+import LessonDetail from './lesson-detail';
+import Home from './home';
 import Viewer from './viewer';
-import Schedule from './schedule';
 import CalendarView,{useCalendar,isTodo,due} from './calendar';
 import {AssistantBar,AssistantFab,AssistantPanel,useAssistant} from './assistant-panel';
 import type {Mood} from './dino';
@@ -28,12 +31,11 @@ export default function Archive({initial,settings:initialSettings,onSignOut,star
   const [importing,setImporting]=useState(!!startImport),onImport=()=>setImporting(true);
   // Tus ajustes (asignaturas, horario…) y lo que se calcula con ellos, para toda la web.
   const [settings,setSettings]=useState<Settings>(initialSettings??DEFAULT_SETTINGS);
-  const plan=useMemo(()=>makePlan(settings),[settings]),subjects=plan.archiveSubjects,colorOf=plan.color;
+  const plan=useMemo(()=>makePlan(settings),[settings]),subjects=plan.archiveSubjects;
   const [lessons,setLessons]=useState<Lesson[]>(initial?.lessons??[]),[files,setFiles]=useState<Item[]>(initial?.files??[]),[loading,setLoading]=useState(!initial);
   const [error,setError]=useState(''),[filter,setFilter]=useState(''),[search,setSearch]=useState(''),[sort,setSort]=useState('new'),[type,setType]=useState('all');
   const [selected,setSelected]=useState<string|null>(null),[dir,setDir]=useState(0),[form,setForm]=useState<{edit?:Lesson}|null>(null),[ask,setAsk]=useState<Ask|null>(null);
-  const [viewer,setViewer]=useState<{items:Item[];start:number}|null>(null),[notice,setNotice]=useState<{text:string;id:number}|null>(null),[zip,setZip]=useState<Zip|null>(null),[drag,setDrag]=useState(false);
-  const input=useRef<HTMLInputElement>(null);
+  const [viewer,setViewer]=useState<{items:Item[];start:number}|null>(null),[notice,setNotice]=useState<{text:string;id:number}|null>(null),[zip,setZip]=useState<Zip|null>(null);
   // Tras cada cambio, la pantalla toma las clases y los archivos de lo guardado (store.doc): así enseña
   // exactamente lo que hay en aula.json, recortes incluidos, y lo que llegue de otro dispositivo.
   const synced=()=>{setLessons(store.doc.lessons);setFiles(store.doc.files)};
@@ -154,79 +156,14 @@ export default function Archive({initial,settings:initialSettings,onSignOut,star
       <div className="content">
         {error&&<div className="error" role="alert"><AlertCircle size={18}/><span>{error}</span><button onClick={()=>{setError('');refresh()}}>Reintentar</button></div>}
         <div className="view" key={active?.id??(inCalendar?'calendar':inSettings?'settings':'list')} data-dir={dir}>
-        {active?<>
-          <button className="back" onClick={backToList}><ChevronLeft size={17}/>Volver a las clases</button>
-          <div className="page-heading">
-            <div><span className="eyebrow"><span className="subject-dot" style={{background:colorOf(active.subject)}}/>{plan.name(active.subject)} · {dateLabel(active.date)}</span><h1>{active.title}</h1><p>{active.topic||'Material de clase'}</p></div>
-            <button className="primary" onClick={()=>input.current?.click()}><Plus size={18}/>Añadir archivos</button>
-          </div>
-          <div className="detail-tools">
-            <button onClick={()=>setForm({edit:active})}><Pencil size={15}/>Editar clase / mover</button>
-            <button disabled={!activeFiles.length||(zip?.lesson===active.id&&(zip.status==='preparing'||zip.status==='running'))} onClick={downloadClass}>{zip?.lesson===active.id&&(zip.status==='preparing'||zip.status==='running')?<Loader2 className="spin" size={15}/>:<Download size={15}/>}Descargar clase (.zip)</button>
-            <button className="danger" onClick={removeLesson}><Trash2 size={15}/>Eliminar clase</button>
-          </div>
-          {active.notes&&<div className="notes"><h3>Mis anotaciones</h3><p>{active.notes}</p></div>}
-          <input ref={input} type="file" multiple hidden onChange={e=>{if(e.target.files)addFiles(Array.from(e.target.files));e.target.value=''}}/>
-          <div className={'dropzone '+(drag?'drag':'')} onDragOver={e=>{e.preventDefault();setDrag(true)}} onDragLeave={()=>setDrag(false)} onDrop={e=>{e.preventDefault();setDrag(false);addFiles(Array.from(e.dataTransfer.files))}}>
-            <span className="dropzone-icon"><Upload size={21}/></span><b>Añade el material de esta clase</b>
-            <span>Arrastra tus archivos aquí o <button onClick={()=>input.current?.click()}>selecciónalos</button></span>
-            <small>Audio, fotos, PDF, documentos y ZIP · Hasta 2 GB por archivo · Puedes seguir navegando mientras se suben</small>
-          </div>
-          <h2 className="section-title">Archivos <span>{activeFiles.length}</span></h2>
-          <div className="filelist">
-            {activeUploads.map((u,i)=><UploadRow key={u.key} u={u} i={i} onCancel={()=>cancel(u.key)} onRetry={()=>retry(u.key)}/>)}
-            {activeFiles.map((f,i)=>{const k=kindOf(f),open=()=>{if(viewableImage(f)){const imgs=activeFiles.filter(viewableImage);openViewer(imgs,imgs.indexOf(f))}else openViewer([f],0)};
-              return <div className="filerow" key={f.id} style={{'--i':Math.min(i+activeUploads.length,12)} as React.CSSProperties}>
-                <button className={'fileicon '+k} onClick={open} aria-label={'Abrir '+f.name}><Kind f={f}/></button>
-                <button className="filename" onClick={open}><b>{f.name}</b><small>{bytes(f.size)} · {kindLabel[k]}</small></button>
-                <div className="file-actions">
-                  <button className="iconbtn" title="Renombrar" aria-label={'Renombrar '+f.name} onClick={()=>rename(f)}><Pencil size={16}/></button>
-                  <a className="iconbtn" title="Descargar original" aria-label={'Descargar '+f.name} href={fileURL(f,true)}><Download size={17}/></a>
-                  <button className="iconbtn danger" title="Eliminar archivo" aria-label={'Eliminar '+f.name} onClick={()=>removeFile(f)}><Trash2 size={16}/></button>
-                </div>
-              </div>})}
-            {!activeFiles.length&&!activeUploads.length&&<p className="filelist-empty">Todavía no hay archivos en esta clase.</p>}
-          </div>
-        </>:inCalendar?<CalendarView cal={cal} toast={toast} onDone={celebrate}/>
+        {active?<LessonDetail active={active} activeFiles={activeFiles} activeUploads={activeUploads} zip={zip} backToList={backToList} setForm={setForm} downloadClass={downloadClass} removeLesson={removeLesson}
+          addFiles={addFiles} cancel={k=>cancel(k)} retry={retry} openViewer={openViewer} rename={rename} removeFile={removeFile}/>
+        :inCalendar?<CalendarView cal={cal} toast={toast} onDone={celebrate}/>
         :inSettings?<SettingsView settings={settings} lessons={lessons} events={cal.events} onImport={onImport} onSignOut={onSignOut} onSaved={s=>{setSettings(s);cal.reload();toast('Ajustes guardados.')}}
-          onMoved={(from,to)=>{const n=lessons.filter(l=>l.subject===from).length;synced();toast(`${plural(n,'clase movida','clases movidas')} a ${plan.short(to)}.`)}}/>:<>
-          <div className="page-heading">
-            <div><div className="eyebrow">TU CURSO, EN UN SOLO LUGAR</div><h1>{filter?plan.name(filter):'Todo lo que aprendes, aquí.'}</h1><p>Guarda tus clases. Encuentra lo que necesitas. A tu ritmo.</p></div>
-            <button className="primary" onClick={()=>setForm({})}><Plus size={18}/>Nueva clase</button>
-          </div>
-          <Schedule onPick={id=>setFilter(f=>f===id?'':id)} onSetup={openSettings}/>
-          {nextTodo&&(()=>{const d=due(nextTodo);return <button className="next-due" onClick={openCalendar}>
-            <span className="next-due-icon"><CalendarDays size={19}/></span>
-            <span className="next-due-text"><small>Próxima entrega{pendingTodos>1?` · ${pendingTodos} pendientes`:''}</small><b>{nextTodo.title}</b></span>
-            <span className={'due '+d.level}>{d.text}</span><ArrowUpRight className="next-due-arrow" size={16}/></button>})()}
-          <section className="overview">
-            <div><span className="overview-icon"><FolderOpen size={21}/></span><div><b>{lessons.length}</b><span>{lessons.length===1?'Clase guardada':'Clases guardadas'}</span></div></div>
-            <div><span className="overview-icon lavender"><FileText size={21}/></span><div><b>{files.length}</b><span>{files.length===1?'Archivo en tu espacio':'Archivos en tu espacio'}</span></div></div>
-            <div><span className="overview-icon peach"><HardDrive size={21}/></span><div><b>{bytes(total)}</b><span>Material almacenado</span></div></div>
-          </section>
-          <div className="section-heading"><h2>Tus asignaturas <span>{subjects.length}</span></h2>{filter&&<button onClick={()=>{setFilter('');setSearch('')}}>Ver todas <ArrowUpRight size={15}/></button>}</div>
-          {subjects.length?<section className="subjects">{subjects.map(({id,short,name,color},i)=>{const n=lessons.filter(l=>l.subject===id).length;
-            return <button className={'subject-card '+(filter===id?'selected':'')} key={id} style={{'--i':i,'--tint':color} as React.CSSProperties} onClick={()=>setFilter(filter===id?'':id)} aria-pressed={filter===id}>
-              <span className="subject-icon"><Folder size={21}/></span><ArrowUpRight className="card-arrow" size={16}/><h3>{name}</h3><div>{short}<span>·</span>{plural(n,'clase','clases')}</div></button>})}</section>
-          :<button className="feed-bar connect subjects-empty" onClick={openSettings}><span className="feed-icon"><Settings2 size={16}/></span><div><b>Añade tus asignaturas</b><small>En Ajustes eliges sus nombres, colores y tu horario.</small></div><ArrowUpRight size={17}/></button>}
-          <div className="section-heading recent"><h2>{filter?'Clases de '+plan.short(filter):'Todas las clases'} <span>{listed.length}</span></h2>
-            <label className="sort"><select aria-label="Orden de las clases" value={sort} onChange={e=>setSort(e.target.value)}><option value="new">Más recientes primero</option><option value="old">Más antiguas primero</option></select><ChevronDown size={14}/></label></div>
-          <div className="filters">
-            <label className="search"><Search size={18}/><input placeholder="Buscar por tema, fecha o archivo…" value={search} onChange={e=>setSearch(e.target.value)} onKeyDown={e=>e.key==='Escape'&&setSearch('')}/>{search&&<button aria-label="Limpiar búsqueda" onClick={()=>setSearch('')}><X size={15}/></button>}</label>
-            <div className="pills" role="group" aria-label="Tipo de archivo">{[['all','Todo'],['audio','Audios'],['image','Fotos'],['doc','Documentos']].map(([id,label])=><button key={id} className={type===id?'active':''} aria-pressed={type===id} onClick={()=>setType(id)}>{label}</button>)}</div>
-          </div>
-          {loading?<div className="lessons">{[0,1,2].map(i=><div className="lesson skeleton" key={i}><span/><div><i/><i/><i/></div></div>)}</div>
-          :listed.length?<div className="lessons">{listed.map((l,i)=>{const fs=byLesson.get(l.id)??[],count=(k:string)=>fs.filter(f=>kindOf(f)===k).length,a=count('audio'),p=count('image'),d=count('doc'),up=uploads.some(u=>u.lesson===l.id&&(u.status==='uploading'||u.status==='queued'||u.status==='finishing'));
-            return <button className="lesson" key={l.id} style={{'--i':Math.min(i,10)} as React.CSSProperties} onClick={()=>openLesson(l.id)}>
-              <span className="lesson-folder" style={{background:colorOf(l.subject)}}><Folder size={22}/></span>
-              <div className="lesson-body"><span className="lesson-meta">{plan.short(l.subject)}<i>·</i>{dateLabel(l.date)}</span><h3>{l.title}</h3>
-                <small>{l.topic&&<span className="lesson-topic">{l.topic}</span>}{a>0&&<span><FileAudio size={13}/>{a}</span>}{p>0&&<span><ImageIcon size={13}/>{p}</span>}{d>0&&<span><FileText size={13}/>{d}</span>}{fs.length?<span>{bytes(fs.reduce((s,f)=>s+f.size,0))}</span>:<span>Sin archivos</span>}{up&&<span className="lesson-uploading"><Loader2 className="spin" size={12}/>Subiendo</span>}</small></div>
-              <ArrowUpRight className="lesson-arrow" size={19}/></button>})}</div>
-          :<div className="empty"><span className="empty-icon"><FolderOpen size={28}/></span><h3>{search||type!=='all'?'No hay clases que coincidan':'Tu próxima clase empieza aquí'}</h3><p>{search||type!=='all'?'Prueba con otra búsqueda o cambia los filtros.':'Crea una clase y reúne su audio, fotos y documentos.'}</p>
-            {search||type!=='all'?<button className="ghost" onClick={()=>{setSearch('');setType('all')}}>Quitar filtros</button>:<button className="primary" onClick={()=>setForm({})}><Plus size={17}/>Crear mi primera clase</button>}<small>Disponible desde tu móvil y tu ordenador</small></div>}
-          {lessons.length>0&&<div className="export-all"><div><b>Copia de todo tu archivo</b><small>Un ZIP con todas tus clases, sus originales y tus ajustes. Se puede volver a importar en Aula.</small></div><button onClick={exportAll}><Download size={15}/>Exportar todo · {bytes(total)}</button></div>}
-          <footer><BookOpen size={15}/> Menos buscar archivos. Más tiempo para aprender.<span><Lock size={12}/>Solo tú puedes ver tu material</span></footer>
-        </>}
+          onMoved={(from,to)=>{const n=lessons.filter(l=>l.subject===from).length;synced();toast(`${plural(n,'clase movida','clases movidas')} a ${plan.short(to)}.`)}}/>
+        :<Home lessons={lessons} files={files} total={total} subjects={subjects} listed={listed} byLesson={byLesson} uploads={uploads} loading={loading} nextTodo={nextTodo} pendingTodos={pendingTodos}
+          filter={filter} setFilter={setFilter} search={search} setSearch={setSearch} sort={sort} setSort={setSort} type={type} setType={setType}
+          setForm={setForm} openCalendar={openCalendar} openSettings={openSettings} openLesson={openLesson} exportAll={exportAll}/>}
         </div>
       </div>
     </main>
