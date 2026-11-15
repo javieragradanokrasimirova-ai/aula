@@ -1,8 +1,8 @@
 import {useCallback,useEffect,useMemo,useRef,useState} from 'react';
-import {BookOpen,LayoutGrid,Folder,Plus,Search,ArrowUpRight,Upload,FileAudio,FileText,Image as ImageIcon,Download,X,ChevronLeft,ChevronDown,Lock,HardDrive,Trash2,Pencil,Loader2,Check,FolderOpen,AlertCircle,CalendarDays,Settings2,LogOut} from 'lucide-react';
+import {BookOpen,Folder,Plus,Search,ArrowUpRight,Upload,FileAudio,FileText,Image as ImageIcon,Download,X,ChevronLeft,ChevronDown,Lock,HardDrive,Trash2,Pencil,Loader2,Check,FolderOpen,AlertCircle,CalendarDays,Settings2} from 'lucide-react';
 import {useStore} from './store';
 import ImportView from './import-view';
-import Avatar from './avatar';
+import Sidebar from './sidebar';
 import {entryBlob,type ImportPlan} from './import';
 import {saveLesson as newLesson} from './doc';
 import {bytes,fileURL,kindOf,plural,viewableImage,type Item,type Lesson} from './types';
@@ -147,28 +147,8 @@ export default function Archive({initial,settings:initialSettings,onSignOut,star
   // Si el filtro apunta a una asignatura que ya no está en «Mis asignaturas», se quita.
   useEffect(()=>{if(filter&&!subjects.some(s=>s.id===filter))setFilter('')},[subjects,filter]);
   return <PlanContext.Provider value={plan}><div className="shell">
-    <aside className="sidebar">
-      <a className="brand" href="./" aria-label="Aula inicio" onClick={e=>{e.preventDefault();chooseSubject('');scrollTo({top:0,behavior:'smooth'})}}><span className="brandmark"><BookOpen size={21}/></span>aula<span className="brand-dot">.</span></a>
-      <div className="workspace"><span className="workspace-avatar">D</span><div><b>Mi espacio de clases</b>{settings.course&&<small>{settings.course}</small>}</div></div>
-      <div className="navlabel">BIBLIOTECA</div>
-      <button className={'navitem '+(!filter&&!active&&!inCalendar&&!inSettings?'chosen':'')} onClick={()=>chooseSubject('')}><LayoutGrid size={17}/>Todas las clases<span>{lessons.length}</span></button>
-      <button className={'navitem '+(inCalendar?'chosen':'')} onClick={openCalendar}><CalendarDays size={17}/>Calendario<span>{pendingTodos||''}</span></button>
-      <button className={'navitem '+(inSettings?'chosen':'')} onClick={openSettings}><Settings2 size={17}/>Ajustes<span/></button>
-      <div className="navlabel subject-label">MIS ASIGNATURAS <span>{String(subjects.length).padStart(2,'0')}</span></div>
-      <nav aria-label="Asignaturas">
-        <button className={'navitem all-chip '+(!filter&&!inCalendar&&!inSettings?'chosen':'')} onClick={()=>chooseSubject('')}><LayoutGrid size={14}/>Todas</button>
-        <button className={'navitem all-chip '+(inCalendar?'chosen':'')} onClick={openCalendar}><CalendarDays size={14}/>Calendario</button>
-        <button className={'navitem all-chip '+(inSettings?'chosen':'')} onClick={openSettings}><Settings2 size={14}/>Ajustes</button>
-        {subjects.map(s=><button key={s.id} className={'navitem '+(filter===s.id&&!inCalendar&&!inSettings?'chosen':'')} onClick={()=>chooseSubject(s.id)}><span className="subject-dot" style={{background:s.color}}/>{s.short}<span>{lessons.filter(l=>l.subject===s.id).length}</span></button>)}
-      </nav>
-      <div className="side-bottom">
-        <div className="storage"><span className="storage-icon"><HardDrive size={16}/></span><div><b>{bytes(total)}</b><small>en {plural(files.length,'archivo','archivos')}</small></div></div>
-        <div className="private"><Lock size={13}/> Espacio privado · Solo tú</div>
-        <div className="profile"><Avatar user={store.adapter.user}/>
-          <div title={[store.adapter.user.name,store.adapter.user.email].filter(Boolean).join(" · ")}><b>{store.adapter.user.name}</b><small>{store.adapter.kind==='drive'?'Guardado en tu Google Drive':'Solo en este navegador'}</small></div>
-          <button className="iconbtn" title={store.adapter.kind==='drive'?'Cerrar sesión':'Salir del modo demo'} aria-label="Cerrar sesión" onClick={onSignOut}><LogOut size={16}/></button></div>
-      </div>
-    </aside>
+    <Sidebar settings={settings} lessons={lessons} files={files} total={total} subjects={subjects} filter={filter} active={!!active} inCalendar={inCalendar} inSettings={inSettings} pendingTodos={pendingTodos}
+      chooseSubject={chooseSubject} openCalendar={openCalendar} openSettings={openSettings} onSignOut={onSignOut}/>
     <main>
       <header className="topbar"><div className="crumbs"><span>Mi espacio</span><i>/</i><b>{crumb}</b></div><div className="topbar-end"><AssistantBar a={assistant}/><span className="secure"><Lock size={12}/>Privado</span></div></header>
       <div className="content">
