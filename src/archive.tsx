@@ -29,7 +29,7 @@ function Kind({f,size=20}:{f:{type:string;name:string};size?:number}){const k=ki
 const kindLabel={audio:'Audio',image:'Imagen',doc:'Documento'};
 
 export default function Archive({initial,settings:initialSettings,onSignOut,startImport}:{initial?:{lessons:Lesson[];files:Item[]};settings?:Settings;onSignOut:()=>void;startImport?:boolean}){
-  const store=useStore(),api=(b:object)=>store.archive(b);
+  const store=useStore();
   // Con Drive, lo borrado va a la papelera de Drive; en el modo demo se borra del todo.
   const trashNote=(many:boolean)=>store.adapter.kind==='drive'?`${many?'Los archivos van':'El archivo va'} a la papelera de tu Google Drive: puedes recuperarlos allí durante 30 días.`:'En el modo demo no se puede deshacer.';
   const [importing,setImporting]=useState(!!startImport),onImport=()=>setImporting(true);
@@ -110,16 +110,16 @@ export default function Archive({initial,settings:initialSettings,onSignOut,star
     toast(!created&&!missing?'Ya estaba todo importado.':[created?plural(created,'clase nueva','clases nuevas'):'',missing?`subiendo ${plural(missing,'archivo','archivos')}`:''].filter(Boolean).join(' · ')+'.');
   }
   async function saveLesson(v:Omit<Lesson,'id'>,pending:File[],edit?:Lesson){
-    const {id}=await api({action:'save',...v,id:edit?.id});synced();
+    const {id}=await store.archive({action:'save',...v,id:edit?.id});synced();
     if(!edit){openLesson(id);if(pending.length)add(pending,id,store.doc.lessons.find(x=>x.id===id)?.title??v.title)}
     toast(edit?'Cambios guardados.':'Clase creada.');
   }
   function addFiles(list:File[]){if(active&&list.length)add(list,active.id,active.title)}
   function removeLesson(){if(!active)return;const id=active.id,n=activeFiles.length;
     setAsk({title:'¿Eliminar esta clase?',text:`Se borrarán «${active.title}» y ${plural(n,'archivo','archivos')}. ${trashNote(n!==1)}`,confirm:'Eliminar clase',danger:true,run:async()=>{
-      cancel(undefined,id);await api({action:'deleteLesson',id});synced();backToList();toast('Clase eliminada.')}})}
-  function removeFile(f:Item){setAsk({title:'¿Eliminar este archivo?',text:`Se borrará «${f.name}». ${trashNote(false)}`,confirm:'Eliminar',danger:true,run:async()=>{await api({action:'deleteFile',id:f.id});synced();toast('Archivo eliminado.')}})}
-  function rename(f:Item){setAsk({title:'Renombrar archivo',confirm:'Guardar nombre',input:f.name,run:async name=>{name=name.trim();if(!name||name===f.name)return;await api({action:'renameFile',id:f.id,name});synced()}})}
+      cancel(undefined,id);await store.archive({action:'deleteLesson',id});synced();backToList();toast('Clase eliminada.')}})}
+  function removeFile(f:Item){setAsk({title:'¿Eliminar este archivo?',text:`Se borrará «${f.name}». ${trashNote(false)}`,confirm:'Eliminar',danger:true,run:async()=>{await store.archive({action:'deleteFile',id:f.id});synced();toast('Archivo eliminado.')}})}
+  function rename(f:Item){setAsk({title:'Renombrar archivo',confirm:'Guardar nombre',input:f.name,run:async name=>{name=name.trim();if(!name||name===f.name)return;await store.archive({action:'renameFile',id:f.id,name});synced()}})}
   // Un ZIP con su tarjeta de progreso (que se refresca como mucho cada 120 ms). Solo uno a la vez.
   // lesson: la clase que se descarga ('*' si son varias); hide: la tarjeta se quita sola al acabar.
   async function runZip(lesson:string,title:string,size:number,run:(mod:typeof import('./zip'),onProgress:(p:ZipProgress)=>void)=>Promise<void>,hide=false){

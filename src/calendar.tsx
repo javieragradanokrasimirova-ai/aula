@@ -4,20 +4,19 @@ import {AlertCircle,ArrowUpRight,Check,ChevronDown,ChevronLeft,ChevronRight,Link
 import {MOODLE_PROXY,SYNC_EVERY} from './moodle';
 import {Modal} from './modal';
 import {usePlan} from './plan';
-import {useStore} from './store';
+import {useStore,type CalendarAction,type CalendarResult,type CalendarState as State} from './store';
 import {readPref,writePref} from './prefs';
 import {keyOf,dayOf,fromKey,timeOf,isTodo,due,type CalEvent,type Kind} from './ics';
 export {keyOf,dayOf,isTodo,due} from './ics';
 
 // feed: cuándo importaste por última vez el calendario de Moodle (null si nunca) y si se actualiza solo.
-export type Feed={importedAt:string;auto:boolean}|null;
-type State={events:CalEvent[];feed:Feed};
+export type Feed=State['feed'];
 
 // Datos del calendario (salen del mismo aula.json que lo demás).
 export function useCalendar(){
-  const store=useStore(),call=(b:object)=>store.calendar(b);
+  const store=useStore(),call=(b:CalendarAction)=>store.calendar(b);
   const [state,setState]=useState<State|null>(()=>store.calendarState()),[syncing,setSyncing]=useState(false);
-  const run=useCallback(async(body:object)=>{const d=await call(body);if(d.events)setState({events:d.events,feed:d.feed});return d},[store]);
+  const run=useCallback(async(body:CalendarAction)=>{const d=await call(body);if(d.events)setState({events:d.events,feed:d.feed??null});return d},[store]);
   // Cambio al instante en pantalla; si falla, se deshace.
   const mark=useCallback(async(id:string,patch:{priority?:number;done?:boolean})=>{
     let before:State|null=null;
@@ -116,7 +115,7 @@ export default function CalendarView({cal,toast,onDone}:{cal:Calendar;toast:(t:s
     {feed?.auto?<div className={'feed-bar'+(syncError?' warn':'')}>
       <span className="feed-icon">{syncing?<Loader2 className="spin" size={16}/>:syncError?<AlertCircle size={16}/>:<Link2 size={16}/>}</span>
       <div><b>Moodle conectado · se actualiza solo</b><small>{syncing?'Actualizando…':syncError?'No se ha podido actualizar: '+syncError:'Última vez '+sinceText(feed.importedAt)}</small></div>
-      <button className="ghost" disabled={syncing} onClick={async()=>{try{const d=await sync();toast(d.imported===1?'Moodle al día: 1 evento.':`Moodle al día: ${d.imported} eventos.`)}catch{}}}><RotateCw size={15}/>Ahora</button>
+      <button className="ghost" disabled={syncing} onClick={async()=>{try{const d=await sync();if(d)toast(d.imported===1?'Moodle al día: 1 evento.':`Moodle al día: ${d.imported} eventos.`)}catch{}}}><RotateCw size={15}/>Ahora</button>
       <button className="iconbtn" aria-label="Opciones de Moodle" onClick={()=>setConnect(true)}><Settings2 size={16}/></button>
     </div>
     :feed?<div className={'feed-bar'+(Date.now()-Date.parse(feed.importedAt)>7*864e5?' warn':'')}>
@@ -221,11 +220,11 @@ function EventForm({edit,date,onClose,onSave}:{edit?:CalEvent;date:string;onClos
 //    (a través del intermediario de moodle.ts, porque Moodle no deja leerlo directamente).
 //  · A mano: exportas el archivo .ics y lo subes.
 // En las dos, lo tuyo (importancia, hechas) se conserva.
-function ConnectForm({feed,run,onClose,toast}:{feed:Feed;run:(b:object)=>Promise<any>;onClose:()=>void;toast:(t:string)=>void}){
+function ConnectForm({feed,run,onClose,toast}:{feed:Feed;run:(b:CalendarAction)=>Promise<CalendarResult>;onClose:()=>void;toast:(t:string)=>void}){
   const [busy,setBusy]=useState<''|'link'|'file'|'unlink'>(''),[error,setError]=useState(''),[manual,setManual]=useState(!MOODLE_PROXY);
-  const go=async(kind:'link'|'file'|'unlink',body:()=>Promise<object>,msg:(d:any)=>string)=>{
+  const go=async(kind:'link'|'file'|'unlink',body:()=>Promise<CalendarAction>,msg:(d:{imported:number})=>string)=>{
     setBusy(kind);setError('');
-    try{const d=await run(await body());toast(msg(d));onClose()}catch(e){setError((e as Error).message)}finally{setBusy('')}};
+    try{const d=await run(await body());toast(msg({imported:d.imported??0}));onClose()}catch(e){setError((e as Error).message)}finally{setBusy('')}};
   const count=(n:number)=>n===1?'1 evento':`${n} eventos`;
   return <Modal label="Calendario de Moodle" onClose={onClose}>{close=><>
     <div className="modal-head"><div><span className="eyebrow">MOODLE</span><h2>{feed?.auto?'Moodle conectado':manual?'Subir el calendario de Moodle':'Conectar tu calendario de Moodle'}</h2></div><button className="iconbtn" aria-label="Cerrar" onClick={close}><X size={20}/></button></div>

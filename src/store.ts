@@ -6,6 +6,7 @@ import * as D from './doc';
 import type {AulaDoc} from './doc';
 import type {Item} from './types';
 import type {Settings} from './settings';
+import type {CalEvent,Kind} from './ics';
 import {fetchMoodle} from './moodle';
 
 export type User={name:string;email?:string;picture?:string};
@@ -25,6 +26,18 @@ export interface Adapter{
   signOut():Promise<void>;
 }
 
+// Lo que la interfaz puede pedir al almacén (y lo que recibe). Los datos se vuelven a validar en doc.ts.
+type LessonFields={subject:string;title:string;date:string;topic:string;notes:string};
+export type ArchiveAction={action:'save';id?:string}&LessonFields|{action:'renameFile';id:string;name:string}|{action:'deleteFile';id:string}|{action:'deleteLesson';id:string};
+export type EventFields={title:string;description:string;start:string;allDay:boolean;kind:Kind;subject:string;priority:number};
+export type CalendarAction={action:'import';ics:string}|{action:'link';url:string}|{action:'sync'}|{action:'unlink'}|{action:'save';id?:string}&EventFields
+  |{action:'mark';id:string;priority?:number;done?:boolean}|{action:'delete';id:string};
+// feed: cuándo importaste por última vez el calendario de Moodle (null si nunca) y si se actualiza solo.
+export type CalendarState={events:CalEvent[];feed:{importedAt:string;auto:boolean}|null};
+// imported: eventos traídos de Moodle (importar, conectar y sincronizar). «mark» solo responde ok.
+export type CalendarResult=Partial<CalendarState>&{imported?:number;ok?:true};
+export type SettingsAction={action:'save';settings:Settings}|{action:'moveLessons';from:string;to:string};
+
 export class Store{
   doc:AulaDoc=D.emptyDoc();private chain:Promise<unknown>=Promise.resolve();
   constructor(public adapter:Adapter){}
@@ -38,7 +51,9 @@ export class Store{
   get data(){return {lessons:this.doc.lessons,files:this.doc.files}}
 
   // ---------- Clases y archivos (antes /api/archive) ----------
-  async archive(b:any):Promise<any>{
+  async archive(b:ArchiveAction&{action:'save'}):Promise<{id:string}>;
+  async archive(b:ArchiveAction):Promise<{ok:true}>;
+  async archive(b:ArchiveAction):Promise<{id:string}|{ok:true}>{
     switch(b.action){
       case 'save':return {id:(await this.mutate(d=>D.saveLesson(d,b))).id};
       case 'renameFile':{const name=String(b.name??'');await this.mutate(d=>({doc:D.renameFile(d,b.id,name)}));await this.adapter.rename?.(b.id,name.trim()).catch(()=>{});return {ok:true}}
@@ -57,8 +72,8 @@ export class Store{
   }
 
   // ---------- Calendario (antes /api/calendar) ----------
-  calendarState(){const m=this.doc.moodle;return {events:this.doc.events,feed:m.importedAt?{importedAt:m.importedAt,auto:!!m.url}:null}}
-  async calendar(b:any):Promise<any>{
+  calendarState():CalendarState{const m=this.doc.moodle;return {events:this.doc.events,feed:m.importedAt?{importedAt:m.importedAt,auto:!!m.url}:null}}
+  async calendar(b:CalendarAction):Promise<CalendarResult>{
     switch(b.action){
       case 'import':{const {count}=await this.mutate(d=>D.importICS(d,String(b.ics??'')));return {...this.calendarState(),imported:count}}
       // Conectar el enlace de Moodle: se descarga ya (si falla, no se guarda) y queda para las próximas veces.
@@ -75,8 +90,10 @@ export class Store{
   }
 
   // ---------- Ajustes (antes /api/settings) ----------
-  async settings(b:any):Promise<any>{
-    if(b.action==='save'){const r=await this.mutate(d=>D.saveSettings(d,b.settings));return {settings:this.doc.settings as Settings,remapped:r.remapped}}
+  async settings(b:SettingsAction&{action:'save'}):Promise<{settings:Settings;remapped:number}>;
+  async settings(b:SettingsAction&{action:'moveLessons'}):Promise<{ok:true;moved:number}>;
+  async settings(b:SettingsAction):Promise<{settings:Settings;remapped:number}|{ok:true;moved:number}>{
+    if(b.action==='save'){const r=await this.mutate(d=>D.saveSettings(d,b.settings));return {settings:this.doc.settings,remapped:r.remapped}}
     if(b.action==='moveLessons'){const r=await this.mutate(d=>D.moveLessons(d,String(b.from??''),String(b.to??'')));return {ok:true,moved:r.moved}}
     throw new D.UserError('Operación no válida.');
   }

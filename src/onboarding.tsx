@@ -105,7 +105,7 @@ export default function Onboarding({onDone}:{onDone:(next:{settings:Settings;imp
           <li>Sube aquí el archivo <b>.ics</b> que se descarga.</li>
         </ol>
         {imported!==null?<p className="onb-ok"><Check size={16}/>{imported===1?'1 evento importado.':`${imported} eventos importados.`} Si alguna categoría de Moodle no se reconoce, Ajustes te dirá de qué asignatura es.</p>
-        :<label className="ghost import-btn onb-ics">{busy?<Loader2 className="spin" size={16}/>:<Upload size={16}/>}Elegir el archivo .ics<input type="file" accept=".ics,text/calendar" hidden disabled={busy} onChange={e=>{const f=e.target.files?.[0];e.target.value='';if(f)run(async()=>{const d=await store.calendar({action:'import',ics:await f.text()});setImported(d.imported)})}}/></label>}
+        :<label className="ghost import-btn onb-ics">{busy?<Loader2 className="spin" size={16}/>:<Upload size={16}/>}Elegir el archivo .ics<input type="file" accept=".ics,text/calendar" hidden disabled={busy} onChange={e=>{const f=e.target.files?.[0];e.target.value='';if(f)run(async()=>{const d=await store.calendar({action:'import',ics:await f.text()});setImported(d.imported??0)})}}/></label>}
         {error&&<p className="error" role="alert"><AlertCircle size={17}/>{error}</p>}
         <footer className="onb-foot"><button className="ghost" onClick={()=>setStep(2)}><ArrowLeft size={16}/>Atrás</button>
           <button className="primary" onClick={()=>onDone({settings:store.doc.settings})}><CalendarDays size={16}/>{imported!==null?'Ir a Aula':'Ahora no, ir a Aula'}<ArrowRight size={16}/></button></footer>
