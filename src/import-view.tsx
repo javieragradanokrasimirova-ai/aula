@@ -2,7 +2,7 @@
 // Las clases y los ajustes se crean al momento; los archivos se suben con la cola normal de subidas.
 import {useState} from 'react';
 import {AlertCircle,ArrowUpRight,FileArchive,Loader2,Upload,X} from 'lucide-react';
-import {Modal} from './archive';
+import {Modal} from './modal';
 import {readExport,type ImportPlan} from './import';
 import {bytes,plural} from './types';
 
