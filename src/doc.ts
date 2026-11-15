@@ -5,14 +5,15 @@ import {EMPTY_SETTINGS,makePlan,parseSettings,validate,type Settings} from './se
 import {parseICS,type CalEvent,type Kind} from './ics';
 import type {Item,Lesson} from './types';
 
-export type AulaDoc={format:'aula';version:1;settings:Settings;lessons:Lesson[];files:Item[];events:CalEvent[];moodle:{importedAt:string|null}};
+// moodle.url: el enlace de «Exportar calendario» de Moodle, si lo conectaste para que se actualice solo.
+export type AulaDoc={format:'aula';version:1;settings:Settings;lessons:Lesson[];files:Item[];events:CalEvent[];moodle:{importedAt:string|null;url:string|null}};
 export class UserError extends Error{}
 
 const uuid=()=>crypto.randomUUID();
 const str=(v:unknown,max:number)=>typeof v==='string'?v.slice(0,max):'';
 const KINDS:Kind[]=['task','exam','event','holiday'];
 
-export const emptyDoc=(settings:Settings=EMPTY_SETTINGS):AulaDoc=>({format:'aula',version:1,settings,lessons:[],files:[],events:[],moodle:{importedAt:null}});
+export const emptyDoc=(settings:Settings=EMPTY_SETTINGS):AulaDoc=>({format:'aula',version:1,settings,lessons:[],files:[],events:[],moodle:{importedAt:null,url:null}});
 
 // Lee un aula.json tolerando huecos o datos raros (mejor perder una línea que toda la web).
 export function normalizeDoc(raw:any):AulaDoc{
@@ -26,8 +27,17 @@ export function normalizeDoc(raw:any):AulaDoc{
     .map((e:any)=>({id:e.id,uid:typeof e.uid==='string'?e.uid:null,title:str(e.title,300)||'Sin título',description:str(e.description,8000),start:e.start,end:typeof e.end==='string'?e.end:null,
       allDay:e.allDay?1:0,kind:e.kind,subject:str(e.subject,20),priority:[0,1,2].includes(e.priority)?e.priority:1,done:e.done?1:0}));
   const settings=raw.settings?parseSettings(JSON.stringify(raw.settings),EMPTY_SETTINGS):EMPTY_SETTINGS;
-  return {format:'aula',version:1,settings,lessons,files,events,moodle:{importedAt:typeof raw.moodle?.importedAt==='string'?raw.moodle.importedAt:null}};
+  let url:string|null=null;try{url=raw.moodle?.url?moodleURL(raw.moodle.url):null}catch{}
+  return {format:'aula',version:1,settings,lessons,files,events,moodle:{importedAt:typeof raw.moodle?.importedAt==='string'?raw.moodle.importedAt:null,url}};
 }
+// Comprueba que es el enlace de exportar el calendario de Moodle (y lo devuelve limpio).
+export function moodleURL(v:unknown):string{
+  let u:URL;try{u=new URL(String(v??'').trim())}catch{throw new UserError('Pega el enlace completo (empieza por https://).')}
+  if(u.protocol!=='https:'||!/\/calendar\/export_execute\.php$/.test(u.pathname))throw new UserError('Ese no parece el enlace del calendario. En Moodle, tras «Obtener URL del calendario», copia el enlace que acaba en export_execute.php?…');
+  if(!u.searchParams.get('authtoken'))throw new UserError('Al enlace le falta una parte (authtoken). Cópialo entero desde Moodle.');
+  return u.toString();
+}
+export function setMoodleURL(doc:AulaDoc,url:string|null):AulaDoc{return {...doc,moodle:{...doc.moodle,url:url===null?null:moodleURL(url)}}}
 
 // ---------- Clases y archivos ----------
 export function saveLesson(doc:AulaDoc,b:any):{doc:AulaDoc;id:string}{
@@ -70,7 +80,7 @@ export function importICS(doc:AulaDoc,text:string,now=new Date()):{doc:AulaDoc;c
     const e:CalEvent={id:old?.id??uuid(),uid:p.uid,title:p.title,description:p.description,start:p.start,end:p.end,allDay:p.allDay,kind:p.kind,subject:p.subject,priority:old?.priority??(p.kind==='exam'?2:1),done:old?.done??0};
     fresh.set(e.id,e)}
   const events=[...fresh.values()].sort((a,b)=>a.start.localeCompare(b.start));
-  return {doc:{...doc,events,moodle:{importedAt:nowISO}},count:items.length};
+  return {doc:{...doc,events,moodle:{...doc.moodle,importedAt:nowISO}},count:items.length};
 }
 export function saveEvent(doc:AulaDoc,b:any):AulaDoc{
   const title=str(b.title,300).trim(),start=String(b.start??''),allDay=b.allDay?1:0;

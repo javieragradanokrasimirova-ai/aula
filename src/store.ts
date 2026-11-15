@@ -6,6 +6,7 @@ import * as D from './doc';
 import type {AulaDoc} from './doc';
 import type {Item} from './types';
 import type {Settings} from './settings';
+import {fetchMoodle} from './moodle';
 
 export type User={name:string;email?:string;picture?:string};
 export type UploadOptions={onProgress:(loaded:number)=>void;signal:AbortSignal;resume?:{get:()=>unknown;set:(v:unknown)=>void}};
@@ -56,10 +57,16 @@ export class Store{
   }
 
   // ---------- Calendario (antes /api/calendar) ----------
-  calendarState(){return {events:this.doc.events,feed:this.doc.moodle.importedAt?{importedAt:this.doc.moodle.importedAt}:null}}
+  calendarState(){const m=this.doc.moodle;return {events:this.doc.events,feed:m.importedAt?{importedAt:m.importedAt,auto:!!m.url}:null}}
   async calendar(b:any):Promise<any>{
     switch(b.action){
       case 'import':{const {count}=await this.mutate(d=>D.importICS(d,String(b.ics??'')));return {...this.calendarState(),imported:count}}
+      // Conectar el enlace de Moodle: se descarga ya (si falla, no se guarda) y queda para las próximas veces.
+      case 'link':{const url=D.moodleURL(b.url),ics=await fetchMoodle(url);
+        const {count}=await this.mutate(d=>{const r=D.importICS(d,ics);return {doc:D.setMoodleURL(r.doc,url),count:r.count}});return {...this.calendarState(),imported:count}}
+      case 'sync':{const url=this.doc.moodle.url;if(!url)throw new D.UserError('No hay ningún enlace de Moodle conectado.');
+        const ics=await fetchMoodle(url);const {count}=await this.mutate(d=>D.importICS(d,ics));return {...this.calendarState(),imported:count}}
+      case 'unlink':await this.mutate(d=>({doc:D.setMoodleURL(d,null)}));return this.calendarState();
       case 'save':await this.mutate(d=>({doc:D.saveEvent(d,b)}));return this.calendarState();
       case 'mark':await this.mutate(d=>({doc:D.markEvent(d,b)}));return {ok:true};
       case 'delete':await this.mutate(d=>({doc:D.deleteEvent(d,b.id)}));return this.calendarState();

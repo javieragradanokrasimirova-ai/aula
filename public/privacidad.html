@@ -34,7 +34,7 @@
   <a class="brand" href="./"><span><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 7v14"/><path d="M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z"/></svg></span>aula<i>.</i></a>
   <article>
     <h1>Privacidad</h1>
-    <p class="date">Última actualización: 14 de noviembre de 2026</p>
+    <p class="date">Última actualización: 15 de noviembre de 2026</p>
     <p class="box"><b>En pocas palabras:</b> Aula no tiene servidor ni base de datos propia. Tus clases, archivos y ajustes se guardan en <b>tu propio Google Drive</b>, en una carpeta llamada «Aula». Nadie más (tampoco quien hizo Aula) puede verlos.</p>
 
     <h2>Qué es Aula</h2>
@@ -43,9 +43,10 @@
     <h2>Qué datos usa y dónde se guardan</h2>
     <ul>
       <li><b>Lo que tú creas en Aula</b> (asignaturas, horario, clases, notas, eventos del calendario y los archivos que subes) se guarda en tu Google Drive: <code>Aula/aula.json</code> y la carpeta <code>Aula/Archivos</code>.</li>
-      <li><b>Tu nombre, tu correo y tu foto de perfil de Google</b> solo se usan para mostrarte con qué cuenta has entrado. No se guardan en ningún sitio.</li>
+      <li><b>Tu nombre, tu correo y tu foto de perfil de Google</b> solo se usan para mostrarte con qué cuenta has entrado. No se envían a ningún sitio.</li>
       <li><b>El permiso de Google</b> (un «token» que caduca en una hora) se guarda temporalmente en tu navegador para poder leer y escribir en tu carpeta de Aula. También se recuerdan ahí tu nombre, tu correo y tu foto de perfil para ofrecerte «Continuar como…» la próxima vez; se borran al cerrar sesión.</li>
       <li>Si importas un calendario de Moodle (archivo <code>.ics</code>), se lee en tu navegador y sus eventos pasan a tu <code>aula.json</code>.</li>
+      <li>Si <b>conectas tu calendario de Moodle</b> para que se actualice solo, el enlace que copias de Moodle (que solo permite leer tu calendario) se guarda en tu <code>aula.json</code>. Para descargarlo, tu navegador lo envía a un pequeño intermediario de Aula en Cloudflare, porque Moodle no deja que otra web lo lea directamente. El intermediario solo descarga ese calendario y te lo devuelve: no guarda el enlace, ni el calendario, ni registros. Su código es público (<code>worker/moodle-ics.js</code>). Puedes desconectarlo cuando quieras en el Calendario.</li>
       <li>En el <b>modo demo</b> (sin cuenta), todo se guarda solo en ese navegador.</li>
     </ul>
 
@@ -57,8 +58,8 @@
     <p>El uso que hace Aula de la información recibida de las API de Google se ajusta a la <a href="https://developers.google.com/terms/api-services-user-data-policy" rel="noopener">Política de datos de usuario de los servicios de API de Google</a>, incluidos los requisitos de uso limitado. Aula no vende, comparte ni usa tus datos para publicidad, y no los usa para entrenar modelos de inteligencia artificial.</p>
 
     <h2>Con quién se comparte</h2>
-    <p>Con nadie. La web habla directamente con Google desde tu navegador. Aula no usa analítica, ni cookies de seguimiento, ni publicidad.</p>
-    <p>Para funcionar, tu navegador se conecta a: <b>Google</b> (inicio de sesión, Drive y las fuentes tipográficas), y <b>GitHub Pages</b>, que sirve la web y, como cualquier servidor, puede registrar datos técnicos de la visita (como la dirección IP) según su propia política.</p>
+    <p>Con nadie. La web habla directamente con Google desde tu navegador (salvo el enlace del calendario de Moodle, si lo conectas: ver arriba). Aula no usa analítica, ni cookies de seguimiento, ni publicidad.</p>
+    <p>Para funcionar, tu navegador se conecta a: <b>Google</b> (inicio de sesión, Drive y las fuentes tipográficas), <b>Cloudflare</b> (solo si conectas Moodle, para el intermediario del calendario) y <b>GitHub Pages</b>, que sirve la web y, como cualquier servidor, puede registrar datos técnicos de la visita (como la dirección IP) según su propia política.</p>
 
     <h2>Cómo borrar tus datos</h2>
     <ol>

@@ -2,8 +2,9 @@
 // el almacén con un adaptador en memoria y la importación del ZIP de «Exportar todo».
 import ts from 'typescript';import {readFileSync,writeFileSync,mkdirSync} from 'node:fs';import assert from 'node:assert/strict';
 mkdirSync('.test-runtime',{recursive:true});
-const fix=t=>t.replace(/from '\.\/(types|settings|ics|doc|store|import|assistant)'/g,"from './$1.mjs'").replace(/^import \{createContext,useContext\} from 'react';$/m,'const createContext=()=>null,useContext=()=>null;');
-for(const m of ['types','settings','ics','doc','store','import','assistant'])writeFileSync(`.test-runtime/${m}.mjs`,ts.transpile(fix(readFileSync(`src/${m}.ts`,'utf8')),{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.ESNext}));
+globalThis.__env={VITE_MOODLE_PROXY:'https://proxy.test'};
+const fix=t=>t.replace(/\(import\.meta as any\)\.env/g,'globalThis.__env').replace(/from '\.\/(types|settings|ics|doc|store|moodle|import|assistant)'/g,"from './$1.mjs'").replace(/^import \{createContext,useContext\} from 'react';$/m,'const createContext=()=>null,useContext=()=>null;');
+for(const m of ['types','settings','ics','doc','store','moodle','import','assistant'])writeFileSync(`.test-runtime/${m}.mjs`,ts.transpile(fix(readFileSync(`src/${m}.ts`,'utf8')),{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.ESNext}));
 const D=await import('../.test-runtime/doc.mjs'),{Store}=await import('../.test-runtime/store.mjs'),I=await import('../.test-runtime/import.mjs'),S=await import('../.test-runtime/settings.mjs');
 
 // ---------- Documento ----------
@@ -61,6 +62,20 @@ saved.lessons.push({id:'otro',subject:'PSP',title:'Desde el móvil',date:'2026-1
 await st.archive({action:'save',title:'Desde el PC',subject:'PSP',date:'2026-11-10'});
 assert.ok(saved.lessons.some(l=>l.id==='otro')&&saved.lessons.some(l=>l.title==='Desde el PC'));
 const c=await st.calendar({action:'import',ics:cal(ev('k','Vencimiento de K',`${y}0101T100000Z`,'dam_ps'))});assert.equal(c.imported,1);assert.ok(c.feed.importedAt);
+// Moodle conectado: el enlace se comprueba, se descarga a través del intermediario y queda guardado.
+assert.throws(()=>D.moodleURL('https://moodle.x/calendar/view.php'),D.UserError);
+assert.throws(()=>D.moodleURL('https://moodle.x/calendar/export_execute.php?userid=1'),/authtoken/);
+const LINK='https://moodle.x/calendar/export_execute.php?userid=1&authtoken=abc&preset_what=all';
+const asked=[];globalThis.fetch=async(u,o)=>{asked.push([u,JSON.parse(o.body).url]);return new Response(cal(ev('m1','Tarea M1',`${y}0201T100000Z`,'dam_ps')),{status:200})};
+const lk=await st.calendar({action:'link',url:LINK});assert.equal(lk.imported,1);assert.equal(lk.feed.auto,true);assert.equal(saved.moodle.url,LINK);assert.deepEqual(asked[0],['https://proxy.test',LINK]);
+assert.ok(saved.events.some(e=>e.title==='Tarea M1'));
+const sy=await st.calendar({action:'sync'});assert.equal(sy.imported,1);assert.equal(asked.length,2);
+globalThis.fetch=async()=>new Response('Moodle no ha devuelto un calendario.',{status:422});
+await assert.rejects(st.calendar({action:'sync'}),/no ha devuelto/);
+await assert.rejects(st.calendar({action:'link',url:LINK.replace('abc','zzz')}),/no ha devuelto/);assert.equal(saved.moodle.url,LINK,'si el enlace nuevo falla, se queda el anterior');
+const ul=await st.calendar({action:'unlink'});assert.equal(ul.feed.auto,false);assert.equal(saved.moodle.url,null);assert.ok(saved.events.some(e=>e.title==='Tarea M1'),'al desconectar, los eventos se quedan');
+await assert.rejects(st.calendar({action:'sync'}),/ningún enlace/);
+assert.equal(D.normalizeDoc({moodle:{url:'https://otro.x/robar'}}).moodle.url,null,'un enlace raro en aula.json no se conserva');
 
 // ---------- Importar el ZIP de «Exportar todo» ----------
 // ZIP sin compresión como los que genera Aula (aquí con el formato «en streaming»: tamaños al final).

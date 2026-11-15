@@ -1072,3 +1072,8 @@ button.slot:active{transform:scale(.97)}
 .set-install{display:flex;gap:9px;align-items:flex-start;font-size:13.5px;line-height:1.5;color:var(--ink-2);background:var(--green-tint);border-radius:12px;padding:10px 12px;margin:0 0 12px}
 .set-install svg{flex-shrink:0;margin-top:2px;color:var(--green-2)}
 .set-install.done{color:var(--muted);background:transparent;padding:0 2px}
+.connect-url{margin-bottom:10px}
+.connect-url input{font-size:13.5px}
+.connect-url+.connect-note{margin:0 0 14px}
+.connect-note a{color:inherit;text-decoration:underline;text-underline-offset:2px}
+.feed-bar .iconbtn{flex-shrink:0}

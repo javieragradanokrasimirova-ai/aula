@@ -1,14 +1,15 @@
 
 import {useCallback,useEffect,useMemo,useState} from 'react';
-import {AlertCircle,ArrowUpRight,Check,ChevronDown,ChevronLeft,ChevronRight,Link2,Loader2,Pencil,Plus,RotateCw,Trash2,Upload,X} from 'lucide-react';
+import {AlertCircle,ArrowUpRight,Check,ChevronDown,ChevronLeft,ChevronRight,Link2,Loader2,Pencil,Plus,RotateCw,Settings2,Trash2,Unlink,Upload,X,Zap} from 'lucide-react';
+import {MOODLE_PROXY,SYNC_EVERY} from './moodle';
 import {Modal} from './archive';
 import {usePlan} from './plan';
 import {useStore} from './store';
 import {keyOf,dayOf,fromKey,timeOf,isTodo,due,type CalEvent,type Kind} from './ics';
 export {keyOf,dayOf,isTodo,due} from './ics';
 
-// feed: cuándo importaste por última vez el calendario de Moodle (null si nunca).
-export type Feed={importedAt:string}|null;
+// feed: cuándo importaste por última vez el calendario de Moodle (null si nunca) y si se actualiza solo.
+export type Feed={importedAt:string;auto:boolean}|null;
 type State={events:CalEvent[];feed:Feed};
 
 // Datos del calendario (salen del mismo aula.json que lo demás).
@@ -23,7 +24,21 @@ export function useCalendar(){
     try{await call({action:'mark',id,...patch})}catch(e){setState(before);throw e}
   },[]);
   const reload=useCallback(async()=>{setState(store.calendarState())},[store]);
-  return {events:state?.events??[],feed:state?.feed??null,loaded:!!state,syncing,setSyncing,run,mark,reload};
+  // Moodle conectado: se trae solo al abrir Aula (si hace más de 3 h) y cada 3 h mientras está abierta.
+  const [syncError,setSyncError]=useState('');
+  const sync=useCallback(async(quiet=false)=>{
+    setSyncing(true);if(!quiet)setSyncError('');
+    try{const d=await run({action:'sync'});setSyncError('');return d}catch(e){setSyncError((e as Error).message);if(!quiet)throw e}finally{setSyncing(false)}
+  },[run]);
+  useEffect(()=>{
+    let busy=false;
+    const check=()=>{const m=store.doc.moodle;if(busy||!m.url||!MOODLE_PROXY||document.visibilityState!=='visible')return;
+      if(m.importedAt&&Date.now()-Date.parse(m.importedAt)<SYNC_EVERY)return;
+      busy=true;sync(true).finally(()=>{busy=false})};
+    const first=setTimeout(check,2500),t=setInterval(check,10*60e3);document.addEventListener('visibilitychange',check);
+    return()=>{clearTimeout(first);clearInterval(t);document.removeEventListener('visibilitychange',check)};
+  },[store,sync]);
+  return {events:state?.events??[],feed:state?.feed??null,loaded:!!state,syncing,syncError,sync,run,mark,reload};
 }
 export type Calendar=ReturnType<typeof useCalendar>;
 
@@ -38,7 +53,7 @@ const sinceText=(iso:string|null)=>{if(!iso)return 'aún no';const m=Math.round(
 
 // ---------- Vista ----------
 export default function CalendarView({cal,toast,onDone}:{cal:Calendar;toast:(t:string)=>void;onDone?:()=>void}){
-  const {events,feed,loaded,syncing,setSyncing,run,mark}=cal;
+  const {events,feed,loaded,syncing,syncError,sync,run,mark}=cal;
   const plan=usePlan(),tint=(s:string)=>plan.color(s)??'#e9ece5';
   const today=keyOf(new Date());
   const [month,setMonth]=useState(()=>{const d=new Date();return new Date(d.getFullYear(),d.getMonth(),1)});
@@ -97,14 +112,20 @@ export default function CalendarView({cal,toast,onDone}:{cal:Calendar;toast:(t:s
       <button className="primary" onClick={()=>setForm({date:selected>=today?selected:today})}><Plus size={18}/>Nuevo evento</button>
     </div>
 
-    {feed?<div className={'feed-bar'+(Date.now()-Date.parse(feed.importedAt)>7*864e5?' warn':'')}>
-      <span className="feed-icon">{syncing?<Loader2 className="spin" size={16}/>:<Link2 size={16}/>}</span>
-      <div><b>Calendario de Moodle</b><small>Importado {sinceText(feed.importedAt)}{Date.now()-Date.parse(feed.importedAt)>7*864e5?' · conviene actualizarlo':''}</small></div>
-      <button className="ghost" onClick={()=>setConnect(true)}><RotateCw size={15}/>Actualizar</button>
+    {feed?.auto?<div className={'feed-bar'+(syncError?' warn':'')}>
+      <span className="feed-icon">{syncing?<Loader2 className="spin" size={16}/>:syncError?<AlertCircle size={16}/>:<Link2 size={16}/>}</span>
+      <div><b>Moodle conectado · se actualiza solo</b><small>{syncing?'Actualizando…':syncError?'No se ha podido actualizar: '+syncError:'Última vez '+sinceText(feed.importedAt)}</small></div>
+      <button className="ghost" disabled={syncing} onClick={async()=>{try{const d=await sync();toast(d.imported===1?'Moodle al día: 1 evento.':`Moodle al día: ${d.imported} eventos.`)}catch{}}}><RotateCw size={15}/>Ahora</button>
+      <button className="iconbtn" aria-label="Opciones de Moodle" onClick={()=>setConnect(true)}><Settings2 size={16}/></button>
+    </div>
+    :feed?<div className={'feed-bar'+(Date.now()-Date.parse(feed.importedAt)>7*864e5?' warn':'')}>
+      <span className="feed-icon"><Link2 size={16}/></span>
+      <div><b>Calendario de Moodle</b><small>Importado {sinceText(feed.importedAt)}{MOODLE_PROXY?' · puedes hacer que se actualice solo':Date.now()-Date.parse(feed.importedAt)>7*864e5?' · conviene actualizarlo':''}</small></div>
+      <button className="ghost" onClick={()=>setConnect(true)}>{MOODLE_PROXY?<><Zap size={15}/>Automático</>:<><RotateCw size={15}/>Actualizar</>}</button>
     </div>
     :loaded&&<button className="feed-bar connect" onClick={()=>setConnect(true)}>
       <span className="feed-icon"><Link2 size={16}/></span>
-      <div><b>Trae tu calendario de Moodle</b><small>Exporta el calendario desde Moodle y súbelo aquí: verás tus entregas y exámenes.</small></div>
+      <div><b>Trae tu calendario de Moodle</b><small>{MOODLE_PROXY?'Pega el enlace de tu calendario de Moodle y tus entregas y exámenes aparecerán aquí solos.':'Exporta el calendario desde Moodle y súbelo aquí: verás tus entregas y exámenes.'}</small></div>
       <ArrowUpRight size={17}/>
     </button>}
     {error&&<div className="error" role="alert"><AlertCircle size={18}/><span>{error}</span><button onClick={()=>setError('')} aria-label="Cerrar aviso"><X size={15}/></button></div>}
@@ -194,22 +215,53 @@ function EventForm({edit,date,onClose,onSave}:{edit?:CalEvent;date:string;onClos
     </form></>}</Modal>;
 }
 
-// Importar el calendario de Moodle: sin servidor, la web no puede leer Moodle por sí sola, así que
-// se exporta el archivo .ics y se sube aquí. Lo tuyo (importancia, hechas) se conserva.
+// Traer el calendario de Moodle. Dos formas:
+//  · Automática: pegas una vez el enlace de «Obtener URL del calendario» y Aula lo vuelve a mirar sola
+//    (a través del intermediario de moodle.ts, porque Moodle no deja leerlo directamente).
+//  · A mano: exportas el archivo .ics y lo subes.
+// En las dos, lo tuyo (importancia, hechas) se conserva.
 function ConnectForm({feed,run,onClose,toast}:{feed:Feed;run:(b:object)=>Promise<any>;onClose:()=>void;toast:(t:string)=>void}){
-  const [busy,setBusy]=useState(false),[error,setError]=useState('');
-  const pick=async(f:File)=>{setBusy(true);setError('');try{const d=await run({action:'import',ics:await f.text()});toast(d.imported===1?'1 evento de Moodle importado.':`${d.imported} eventos de Moodle importados.`);onClose()}catch(e){setError((e as Error).message)}finally{setBusy(false)}};
-  return <Modal label="Importar de Moodle" onClose={onClose}>{close=><>
-    <div className="modal-head"><div><span className="eyebrow">MOODLE</span><h2>{feed?'Actualizar desde Moodle':'Traer tu calendario de Moodle'}</h2></div><button className="iconbtn" aria-label="Cerrar" onClick={close}><X size={20}/></button></div>
-    {feed&&<p className="connect-state"><Link2 size={15}/>Última importación: <b>{sinceText(feed.importedAt)}</b>. Repítelo de vez en cuando para ver las tareas nuevas.</p>}
-    <ol className="connect-steps">
-      <li>En Moodle, abre <b>Calendario → Importar o exportar calendarios → Exportar calendario</b>.</li>
-      <li>Elige <b>Todos los eventos</b> y <b>Eventos recientes y próximos</b> (o un intervalo que cubra el curso), y pulsa <b>Exportar</b>. Se descarga un archivo <b>.ics</b>.</li>
-      <li>Súbelo aquí. Las tareas que ya tenías conservan su importancia y si están hechas.</li>
-    </ol>
-    {error&&<p className="error" role="alert"><AlertCircle size={17}/>{error}</p>}
-    <div className="form-footer connect-footer">
-      <button type="button" className="ghost" onClick={close}>Cancelar</button>
-      <label className="primary import-btn">{busy?<Loader2 className="spin" size={16}/>:<Upload size={16}/>}Elegir archivo .ics<input type="file" accept=".ics,text/calendar" hidden disabled={busy} onChange={e=>{const f=e.target.files?.[0];e.target.value='';if(f)pick(f)}}/></label>
-    </div></>}</Modal>;
+  const [busy,setBusy]=useState<''|'link'|'file'|'unlink'>(''),[error,setError]=useState(''),[manual,setManual]=useState(!MOODLE_PROXY);
+  const go=async(kind:'link'|'file'|'unlink',body:()=>Promise<object>,msg:(d:any)=>string)=>{
+    setBusy(kind);setError('');
+    try{const d=await run(await body());toast(msg(d));onClose()}catch(e){setError((e as Error).message)}finally{setBusy('')}};
+  const count=(n:number)=>n===1?'1 evento':`${n} eventos`;
+  return <Modal label="Calendario de Moodle" onClose={onClose}>{close=><>
+    <div className="modal-head"><div><span className="eyebrow">MOODLE</span><h2>{feed?.auto?'Moodle conectado':manual?'Subir el calendario de Moodle':'Conectar tu calendario de Moodle'}</h2></div><button className="iconbtn" aria-label="Cerrar" onClick={close}><X size={20}/></button></div>
+
+    {feed?.auto?<>
+      <p className="connect-state"><Zap size={15}/><span>Aula mira tu Moodle al abrirse y cada 3 horas. Última vez: <b>{sinceText(feed.importedAt)}</b>.</span></p>
+      <p className="connect-note">Si cambias el enlace en Moodle (o deja de funcionar), desconéctalo y pega el nuevo.</p>
+      {error&&<p className="error" role="alert"><AlertCircle size={17}/>{error}</p>}
+      <div className="form-footer connect-footer">
+        <button type="button" className="ghost danger-text" disabled={!!busy} onClick={()=>go('unlink',async()=>({action:'unlink'}),()=>'Moodle desconectado. Tus eventos se quedan.')}>{busy==='unlink'?<Loader2 className="spin" size={16}/>:<Unlink size={16}/>}Desconectar</button>
+        <button type="button" className="primary" onClick={close}>Listo</button>
+      </div>
+    </>:!manual?<form onSubmit={e=>{e.preventDefault();const url=String(new FormData(e.currentTarget).get('url')??'');go('link',async()=>({action:'link',url}),d=>`Moodle conectado: ${count(d.imported)}. A partir de ahora se actualiza solo.`)}}>
+      <ol className="connect-steps">
+        <li>En Moodle, abre <b>Calendario → Importar o exportar calendarios → Exportar calendario</b>.</li>
+        <li>Elige <b>Todos los eventos</b> y <b>Eventos recientes y próximos</b>, y pulsa <b>Obtener URL del calendario</b>.</li>
+        <li>Copia el enlace que aparece y pégalo aquí.</li>
+      </ol>
+      <label className="connect-url">Enlace del calendario<input name="url" type="url" required autoComplete="off" spellCheck={false} placeholder="https://…/calendar/export_execute.php?…"/></label>
+      <p className="connect-note">El enlace solo sirve para leer tu calendario de Moodle. Se guarda en tu Drive y, para descargarlo, pasa por un pequeño intermediario de Aula que no guarda nada (<a href="./privacidad.html" target="_blank" rel="noopener">privacidad</a>).</p>
+      {error&&<p className="error" role="alert"><AlertCircle size={17}/>{error}</p>}
+      <div className="form-footer connect-footer">
+        <button type="button" className="ghost" onClick={()=>{setManual(true);setError('')}}><Upload size={16}/>Prefiero subir el archivo</button>
+        <button className="primary" disabled={!!busy} type="submit">{busy==='link'?<><Loader2 className="spin" size={16}/>Conectando…</>:<><Link2 size={16}/>Conectar</>}</button>
+      </div>
+    </form>:<>
+      {feed&&<p className="connect-state"><Link2 size={15}/>Última importación: <b>{sinceText(feed.importedAt)}</b>. Repítelo de vez en cuando para ver las tareas nuevas.</p>}
+      <ol className="connect-steps">
+        <li>En Moodle, abre <b>Calendario → Importar o exportar calendarios → Exportar calendario</b>.</li>
+        <li>Elige <b>Todos los eventos</b> y <b>Eventos recientes y próximos</b> (o un intervalo que cubra el curso), y pulsa <b>Exportar</b>. Se descarga un archivo <b>.ics</b>.</li>
+        <li>Súbelo aquí. Las tareas que ya tenías conservan su importancia y si están hechas.</li>
+      </ol>
+      {error&&<p className="error" role="alert"><AlertCircle size={17}/>{error}</p>}
+      <div className="form-footer connect-footer">
+        {MOODLE_PROXY?<button type="button" className="ghost" onClick={()=>{setManual(false);setError('')}}><Zap size={16}/>Mejor que se actualice solo</button>:<button type="button" className="ghost" onClick={close}>Cancelar</button>}
+        <label className="primary import-btn">{busy==='file'?<Loader2 className="spin" size={16}/>:<Upload size={16}/>}Elegir archivo .ics<input type="file" accept=".ics,text/calendar" hidden disabled={!!busy} onChange={e=>{const f=e.target.files?.[0];e.target.value='';if(f)go('file',async()=>({action:'import',ics:await f.text()}),d=>`${count(d.imported)} de Moodle ${d.imported===1?'importado':'importados'}.`)}}/></label>
+      </div>
+    </>}
+  </>}</Modal>;
 }

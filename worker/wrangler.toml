@@ -1,0 +1,12 @@
+# Despliegue del intermediario del calendario de Moodle (ver moodle-ics.js).
+#   npx wrangler login
+#   npx wrangler deploy --config worker/wrangler.toml
+# La dirección que te da (https://aula-moodle.<tu-subdominio>.workers.dev) va en la variable de
+# GitHub VITE_MOODLE_PROXY.
+name = "aula-moodle"
+main = "moodle-ics.js"
+compatibility_date = "2026-10-01"
+workers_dev = true
+
+[observability]
+enabled = false

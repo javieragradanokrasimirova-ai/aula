@@ -2,8 +2,8 @@
 // corta, sesión de subida que caduca, reanudar con «Reintentar» y sesión de Google caducada.
 import ts from 'typescript';import {readFileSync,writeFileSync,mkdirSync} from 'node:fs';import assert from 'node:assert/strict';
 mkdirSync('.test-runtime',{recursive:true});
-const fix=t=>t.replace(/from '\.\/(config|doc|idb|store|settings|ics|types)'/g,"from './$1.mjs'").replace(/^import \{createContext,useContext\} from 'react';$/m,'const createContext=()=>null,useContext=()=>null;');
-for(const m of ['config','doc','idb','store','settings','ics','types','drive'])writeFileSync(`.test-runtime/${m}.mjs`,ts.transpile(fix(readFileSync(`src/${m}.ts`,'utf8')),{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.ESNext}));
+const fix=t=>t.replace(/from '\.\/(config|doc|idb|store|moodle|settings|ics|types)'/g,"from './$1.mjs'").replace(/^import \{createContext,useContext\} from 'react';$/m,'const createContext=()=>null,useContext=()=>null;');
+for(const m of ['config','doc','idb','store','moodle','settings','ics','types','drive'])writeFileSync(`.test-runtime/${m}.mjs`,ts.transpile(fix(readFileSync(`src/${m}.ts`,'utf8')),{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.ESNext}));
 
 // Navegador mínimo: sesión guardada, IndexedDB que no hace nada, fetch para abrir la subida y XHR para los trozos.
 const store=new Map();globalThis.localStorage={getItem:k=>store.get(k)??null,setItem:(k,v)=>store.set(k,v),removeItem:k=>store.delete(k)};globalThis.sessionStorage={getItem:()=>null,setItem(){},removeItem(){}};
