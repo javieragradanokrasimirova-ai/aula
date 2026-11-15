@@ -3,13 +3,11 @@
 // Todo se puede cambiar después en Ajustes.
 import {useState} from 'react';
 import {AlertCircle,ArrowLeft,ArrowRight,BookOpen,CalendarDays,Check,FolderInput,Loader2,Plus,Sparkles,Upload,X} from 'lucide-react';
-import {DAYS,PALETTE,hhmm,newId,validate,type Period,type Settings} from './settings';
+import {DAYS,PALETTE,hhmm,newId,validate,toTimeInput as toInput,fromTimeInput as fromInput,type Period,type Settings} from './settings';
 import {useStore} from './store';
 import WeekPainter from './week-painter';
 
 const STEPS=['Empezar','Asignaturas','Horario','Moodle'];
-const toInput=(m:number)=>String(Math.floor(m/60)).padStart(2,'0')+':'+String(m%60).padStart(2,'0');
-const fromInput=(v:string)=>{const m=v.match(/^(\d{1,2}):(\d{2})$/);return m?+m[1]*60+ +m[2]:null};
 
 // Franjas a partir de cuatro datos: hora de entrada, duración, cuántas clases y tras cuál va el recreo.
 export function makePeriods(start:number,length:number,count:number,breakAfter:number,breakLength:number):Period[]{

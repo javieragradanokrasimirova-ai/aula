@@ -3,10 +3,11 @@ import {createPortal} from 'react-dom';
 import {BookOpen,LayoutGrid,Folder,Plus,Search,ArrowUpRight,Upload,FileAudio,FileText,Image as ImageIcon,Download,X,ChevronLeft,ChevronDown,Lock,HardDrive,Trash2,Pencil,Loader2,Check,FolderOpen,RotateCw,AlertCircle,FileArchive,CalendarDays,Settings2,LogOut} from 'lucide-react';
 import {useStore} from './store';
 import ImportView from './import-view';
+import Avatar from './avatar';
 import {entryBlob,type ImportPlan} from './import';
 import {saveLesson as newLesson} from './doc';
 import {bytes,fileURL,kindOf,plural,viewableImage,type Item,type Lesson} from './types';
-import {DEFAULT_SETTINGS,makePlan,type Settings} from './settings';
+import {DEFAULT_SETTINGS,makePlan,norm,type Settings} from './settings';
 import {PlanContext,usePlan} from './plan';
 import SettingsView from './settings-view';
 import {useUploads,type Upload as UploadJob} from './uploads';
@@ -79,8 +80,8 @@ export default function Archive({initial,settings:initialSettings,onSignOut,star
   const active=lessons.find(l=>l.id===selected);
   const byLesson=useMemo(()=>{const m=new Map<string,Item[]>();for(const f of files){const a=m.get(f.lesson);if(a)a.push(f);else m.set(f.lesson,[f])}return m},[files]);
   const total=useMemo(()=>files.reduce((a,f)=>a+f.size,0),[files]);
-  const listed=useMemo(()=>{const fold=(t:string)=>t.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,''),q=fold(search.trim());return lessons.filter(l=>{const fs=byLesson.get(l.id)??[];
-    return (!filter||l.subject===filter)&&(!q||fold([l.title,l.topic,l.notes,l.date,dateLabel(l.date),l.subject,plan.short(l.subject),plan.name(l.subject),...fs.map(f=>f.name)].join(' ')).includes(q))&&(type==='all'||fs.some(f=>kindOf(f)===type))})
+  const listed=useMemo(()=>{const q=norm(search.trim());return lessons.filter(l=>{const fs=byLesson.get(l.id)??[];
+    return (!filter||l.subject===filter)&&(!q||norm([l.title,l.topic,l.notes,l.date,dateLabel(l.date),l.subject,plan.short(l.subject),plan.name(l.subject),...fs.map(f=>f.name)].join(' ')).includes(q))&&(type==='all'||fs.some(f=>kindOf(f)===type))})
     .sort((a,b)=>sort==='old'?a.date.localeCompare(b.date):b.date.localeCompare(a.date))},[lessons,byLesson,filter,search,type,sort,plan]);
   const activeFiles=active?byLesson.get(active.id)??[]:[];
   const activeUploads=active?uploads.filter(u=>u.lesson===active.id&&u.status!=='done'&&u.status!=='cancelled'):[];
@@ -178,7 +179,7 @@ export default function Archive({initial,settings:initialSettings,onSignOut,star
       <div className="side-bottom">
         <div className="storage"><span className="storage-icon"><HardDrive size={16}/></span><div><b>{bytes(total)}</b><small>en {plural(files.length,'archivo','archivos')}</small></div></div>
         <div className="private"><Lock size={13}/> Espacio privado · Solo tú</div>
-        <div className="profile">{store.adapter.user.picture?<img src={store.adapter.user.picture} alt="" referrerPolicy="no-referrer"/>:<span>{(store.adapter.user.name[0]??'A').toUpperCase()}</span>}
+        <div className="profile"><Avatar user={store.adapter.user}/>
           <div title={[store.adapter.user.name,store.adapter.user.email].filter(Boolean).join(" · ")}><b>{store.adapter.user.name}</b><small>{store.adapter.kind==='drive'?'Guardado en tu Google Drive':'Solo en este navegador'}</small></div>
           <button className="iconbtn" title={store.adapter.kind==='drive'?'Cerrar sesión':'Salir del modo demo'} aria-label="Cerrar sesión" onClick={onSignOut}><LogOut size={16}/></button></div>
       </div>

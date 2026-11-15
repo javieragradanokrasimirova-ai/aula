@@ -5,6 +5,7 @@ import {MOODLE_PROXY,SYNC_EVERY} from './moodle';
 import {Modal} from './archive';
 import {usePlan} from './plan';
 import {useStore} from './store';
+import {readPref,writePref} from './prefs';
 import {keyOf,dayOf,fromKey,timeOf,isTodo,due,type CalEvent,type Kind} from './ics';
 export {keyOf,dayOf,isTodo,due} from './ics';
 
@@ -59,7 +60,7 @@ export default function CalendarView({cal,toast,onDone}:{cal:Calendar;toast:(t:s
   const [month,setMonth]=useState(()=>{const d=new Date();return new Date(d.getFullYear(),d.getMonth(),1)});
   const [selected,setSelected]=useState(today);
   const [form,setForm]=useState<{edit?:CalEvent;date?:string}|null>(null),[connect,setConnect]=useState(false);
-  const [order,setOrder]=useState<'date'|'priority'>(()=>{try{return localStorage.getItem('aula-pendientes')==='priority'?'priority':'date'}catch{return 'date'}});
+  const [order,setOrder]=useState<'date'|'priority'>(()=>readPref('aula-pendientes')==='priority'?'priority':'date');
   const [showDone,setShowDone]=useState(false),[open,setOpen]=useState<string|null>(null),[error,setError]=useState('');
 
   const byDay=useMemo(()=>{const m=new Map<string,CalEvent[]>();for(const e of events){const k=dayOf(e);const a=m.get(k);if(a)a.push(e);else m.set(k,[e])}
@@ -79,7 +80,7 @@ export default function CalendarView({cal,toast,onDone}:{cal:Calendar;toast:(t:s
   const go=(delta:number)=>setMonth(m=>new Date(m.getFullYear(),m.getMonth()+delta,1));
   const goToday=()=>{const d=new Date();setMonth(new Date(d.getFullYear(),d.getMonth(),1));setSelected(today)};
   const pickDay=(k:string)=>{setSelected(k);const d=fromKey(k);if(d.getMonth()!==month.getMonth())setMonth(new Date(d.getFullYear(),d.getMonth(),1))};
-  const setOrderSaved=(o:'date'|'priority')=>{setOrder(o);try{localStorage.setItem('aula-pendientes',o)}catch{}};
+  const setOrderSaved=(o:'date'|'priority')=>{setOrder(o);writePref('aula-pendientes',o)};
   const safe=async(fn:()=>Promise<unknown>)=>{setError('');try{await fn()}catch(e){setError((e as Error).message)}};
   // Un toque: Normal → Alta → Baja → Normal.
   const cycle=(e:CalEvent)=>safe(()=>mark(e.id,{priority:[1,2,0][e.priority]??1}));

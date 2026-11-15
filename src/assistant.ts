@@ -2,7 +2,7 @@
 // horario, aunque estén escritas a la ligera (faltas, abreviaturas, varias fechas a la vez…).
 // Todo ocurre en el navegador; no se envía nada a ningún servicio.
 import {kindOf,type Item,type Lesson} from './types';
-import {DAYS,DEFAULT_PLAN,hhmm,type Plan} from './settings';
+import {DAYS,DEFAULT_PLAN,hhmm,norm,type Plan} from './settings';
 import {dayOf,due,isTodo,keyOf,type CalEvent} from './ics';
 
 export type Kind='audio'|'image'|'doc';
@@ -17,7 +17,7 @@ export type Answer={query:Query;text:string;lessons:Lesson[];files:Item[];bytes:
 export type Data={lessons:Lesson[];files:Item[];events?:CalEvent[];plan?:Plan};
 
 // ---------- Texto ----------
-export const norm=(s:string)=>s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'');
+// norm (minúsculas y sin tildes) está en settings.ts.
 const MONTHS=['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
 const MONTH_RE='(enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|setiembre|octubre|noviembre|diciembre)';
 const monthIndex=(m:string)=>m==='setiembre'?8:MONTHS.indexOf(m);
@@ -64,7 +64,7 @@ export function clean(input:string,vocab?:Set<string>,plan:Plan=DEFAULT_PLAN){
 }
 
 // ---------- Fechas ----------
-const iso=(d:Date)=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+const iso=keyOf; // «2026-11-04», fecha local
 const day=(y:number,m:number,d:number)=>new Date(y,m,d,12);
 const addDays=(d:Date,n:number)=>day(d.getFullYear(),d.getMonth(),d.getDate()+n);
 const longDate=(s:string)=>new Date(s+'T12:00:00').toLocaleDateString('es-ES',{day:'numeric',month:'long'});

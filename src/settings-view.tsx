@@ -4,14 +4,13 @@
 import {useEffect,useMemo,useState} from 'react';
 import {useInstall,isInstalled,IOS_STEPS} from './install';
 import {Download,Smartphone,FolderInput,LogOut,AlertCircle,ArrowDown,ArrowRightLeft,ArrowUp,ArrowUpRight,Check,ChevronDown,Coffee,Link2,Loader2,Plus,Trash2,X} from 'lucide-react';
-import {PALETTE,hhmm,newId,validate,type Period,type Settings,type Subject} from './settings';
+import {PALETTE,hhmm,newId,validate,toTimeInput as toInput,fromTimeInput as fromInput,type Period,type Settings,type Subject} from './settings';
 import type {Lesson} from './types';
 import WeekPainter from './week-painter';
 import type {CalEvent} from './ics';
 import {useStore} from './store';
+import Avatar from './avatar';
 
-const toInput=(m:number)=>String(Math.floor(m/60)).padStart(2,'0')+':'+String(m%60).padStart(2,'0');
-const fromInput=(v:string)=>{const m=v.match(/^(\d{1,2}):(\d{2})$/);return m?Math.min(1440,+m[1]*60+ +m[2]):null};
 const words=(v:string)=>v.split(/[,;\n]/).map(w=>w.trim().toLowerCase()).filter(Boolean);
 const DAY_OPTIONS:[number,string][]=[[5,'Lunes a viernes'],[6,'Hasta el sábado'],[7,'Toda la semana']];
 
@@ -99,7 +98,7 @@ export default function SettingsView({settings,lessons,events,onSaved,onMoved,on
       <header><h2 id="set-data">Tus datos</h2><p>{store.adapter.kind==='drive'?'Todo se guarda en tu Google Drive, en la carpeta «Aula». Aula no guarda nada en ningún otro sitio.':'Estás en modo demo: todo se guarda solo en este navegador.'}</p></header>
       {/* Con qué cuenta estás (en el móvil la barra lateral no lo enseña) y salir. */}
       <div className="set-account">
-        {store.adapter.user.picture?<img src={store.adapter.user.picture} alt="" referrerPolicy="no-referrer"/>:<span>{(store.adapter.user.name[0]??'A').toUpperCase()}</span>}
+        <Avatar user={store.adapter.user}/>
         <div><b>{store.adapter.user.name}</b><small>{store.adapter.kind==='drive'?store.adapter.user.email??'Cuenta de Google':'Sin cuenta: solo en este navegador'}</small></div>
         <button type="button" className="ghost" onClick={onSignOut}><LogOut size={15}/>{store.adapter.kind==='drive'?'Cerrar sesión':'Salir del modo demo'}</button>
       </div>

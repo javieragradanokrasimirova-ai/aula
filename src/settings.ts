@@ -93,6 +93,9 @@ export function newId(short:string,taken:string[]){
 // ---------- Lo que se calcula a partir de los ajustes ----------
 export const norm=(s:string)=>s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'');
 export const hhmm=(m:number)=>Math.floor(m/60)+':'+String(m%60).padStart(2,'0');
+// Minutos ↔ valor de un <input type="time"> («08:05»).
+export const toTimeInput=(m:number)=>String(Math.floor(m/60)).padStart(2,'0')+':'+String(m%60).padStart(2,'0');
+export const fromTimeInput=(v:string)=>{const m=v.match(/^(\d{1,2}):(\d{2})$/);return m?Math.min(1440,+m[1]*60+ +m[2]):null};
 // Un bloque del día: horas seguidas de la misma asignatura, un recreo o un hueco libre.
 export type Block={code?:string;free?:boolean;start:number;end:number;from:number;to:number};
 export type Plan=ReturnType<typeof makePlan>;

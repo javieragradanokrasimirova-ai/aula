@@ -4,6 +4,7 @@ import {CalendarDays,Clock} from 'lucide-react';
 
 import {DAYS,hhmm,type Block} from './settings';
 import {usePlan} from './plan';
+import {readPref,writePref} from './prefs';
 
 const left=(m:number)=>m<60?m+' min':Math.floor(m/60)+' h'+(m%60?' '+m%60+' min':'');
 
@@ -22,13 +23,13 @@ export default function Schedule({onPick,onSetup}:{onPick:(subject:string)=>void
   const [now,setNow]=useState<Now|null>(null);
   const [view,setView]=useState<'day'|'week'>('day');
   useEffect(()=>{
-    try{if(localStorage.getItem('aula-horario')==='week')setView('week')}catch{}
+    if(readPref('aula-horario')==='week')setView('week');
     const tick=()=>setNow(readNow());tick();
     const t=setInterval(tick,15000),wake=()=>document.visibilityState==='visible'&&tick();
     document.addEventListener('visibilitychange',wake);
     return()=>{clearInterval(t);document.removeEventListener('visibilitychange',wake)};
   },[]);
-  const pick=(v:'day'|'week')=>{setView(v);try{localStorage.setItem('aula-horario',v)}catch{}};
+  const pick=(v:'day'|'week')=>{setView(v);writePref('aula-horario',v)};
 
   const state=useMemo(()=>{
     if(!now)return null;

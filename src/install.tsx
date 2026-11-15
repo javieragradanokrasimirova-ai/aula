@@ -3,6 +3,7 @@
 // y se usa cuando pulsas «Instalar». En el iPhone no existe: allí se explica cómo hacerlo desde Safari.
 import {useEffect,useState} from 'react';
 import {Download,Share,X} from 'lucide-react';
+import {readPref,writePref} from './prefs';
 
 type Prompt=Event&{prompt:()=>Promise<void>;userChoice:Promise<{outcome:'accepted'|'dismissed'}>};
 let deferred:Prompt|null=null;
@@ -35,10 +36,11 @@ export const IOS_STEPS='En Safari, pulsa Compartir (el cuadrado con la flecha) y
 const SEEN='aula-instalar-visto';
 export function InstallBanner(){
   const {how,install}=useInstall();
-  const [hidden,setHidden]=useState(()=>{try{return !!localStorage.getItem(SEEN)}catch{return true}});
+  // Si el navegador no deja leer la preferencia (undefined), mejor no enseñar el aviso.
+  const [hidden,setHidden]=useState(()=>readPref(SEEN)!==null);
   const [ios,setIos]=useState(false);
   if(!how||hidden)return null;
-  const close=()=>{setHidden(true);try{localStorage.setItem(SEEN,'1')}catch{}};
+  const close=()=>{setHidden(true);writePref(SEEN,'1')};
   return <div className="install-bar" role="status">
     <img src="./icons/icon-192.png" alt="" width={34} height={34}/>
     <span>{ios?IOS_STEPS:<><b>Instala Aula</b> y ábrela desde tu pantalla de inicio, como una app.</>}</span>

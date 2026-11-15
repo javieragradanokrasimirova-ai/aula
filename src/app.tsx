@@ -11,15 +11,17 @@ import {demoAdapter,resetDemo} from './demo';
 import {driveAdapter,hasToken,onTokenChange,signIn} from './drive';
 import {GOOGLE_CLIENT_ID} from './config';
 import {session} from './idb';
+import {readPref,writePref} from './prefs';
+import Avatar from './avatar';
 
 type Mode='drive'|'demo';
 const MODE_KEY='aula-modo',ACCOUNT_KEY='aula-cuenta';
-const savedMode=():Mode|null=>{try{const m=localStorage.getItem(MODE_KEY);return m==='drive'||m==='demo'?m:null}catch{return null}};
-const saveMode=(m:Mode|null)=>{try{if(m)localStorage.setItem(MODE_KEY,m);else localStorage.removeItem(MODE_KEY)}catch{}};
+const savedMode=():Mode|null=>{const m=readPref(MODE_KEY);return m==='drive'||m==='demo'?m:null};
+const saveMode=(m:Mode|null)=>writePref(MODE_KEY,m);
 // La última cuenta con la que entraste en este dispositivo: la bienvenida dice «Continuar como …» y
 // Google no vuelve a preguntar qué cuenta usar. Se olvida al cerrar sesión.
-const savedAccount=():User|null=>{try{const u=JSON.parse(localStorage.getItem(ACCOUNT_KEY)||'null');return u&&typeof u.name==='string'?u:null}catch{return null}};
-const saveAccount=(u:User|null)=>{try{if(u)localStorage.setItem(ACCOUNT_KEY,JSON.stringify({name:u.name,email:u.email,picture:u.picture}));else localStorage.removeItem(ACCOUNT_KEY)}catch{}};
+const savedAccount=():User|null=>{try{const u=JSON.parse(readPref(ACCOUNT_KEY)||'null');return u&&typeof u.name==='string'?u:null}catch{return null}};
+const saveAccount=(u:User|null)=>writePref(ACCOUNT_KEY,u?JSON.stringify({name:u.name,email:u.email,picture:u.picture}):null);
 
 // Pasos al entrar con Google, para enseñar qué está pasando mientras tanto.
 type Stage='google'|'drive'|'data';
@@ -80,7 +82,7 @@ export default function App(){
       {!ready?<div className="welcome-loading"><Loader2 className="spin" size={20}/>Abriendo…</div>:<>
         {account?<>
           <button className="primary welcome-main welcome-account" disabled={busy||!GOOGLE_CLIENT_ID} onClick={()=>open('drive',true,account.email)}>
-            <Avatar user={account}/><span><b>Continuar como {account.name.split(" ")[0]}</b>{account.email&&<small>{account.email}</small>}</span><ArrowRight size={18}/></button>
+            <Avatar user={account} className="welcome-avatar"/><span><b>Continuar como {account.name.split(" ")[0]}</b>{account.email&&<small>{account.email}</small>}</span><ArrowRight size={18}/></button>
           <button className="ghost welcome-other" disabled={busy} onClick={()=>{saveAccount(null);setAccount(null);open('drive',true)}}><GoogleMark/>Usar otra cuenta de Google</button>
         </>:<button className="primary welcome-main" disabled={busy||!GOOGLE_CLIENT_ID} onClick={()=>open('drive',true)}><GoogleMark/>Entrar con Google</button>}
         {!GOOGLE_CLIENT_ID&&<p className="welcome-note">El inicio de sesión con Google aún no está configurado en esta copia.</p>}
@@ -97,8 +99,6 @@ export default function App(){
     {savedMode()===null&&!account&&<button className="welcome-reset" onClick={async()=>{if(confirm('¿Borrar todo lo guardado en el modo demo de este navegador?')){await resetDemo();await session().del('session','current')}}}>Borrar datos del modo demo</button>}
   </div>;
 }
-
-const Avatar=({user}:{user:User})=>user.picture?<img className="welcome-avatar" src={user.picture} alt="" referrerPolicy="no-referrer"/>:<span className="welcome-avatar">{(user.name[0]??'A').toUpperCase()}</span>;
 
 // Pantalla mientras se conecta con Google: dice en qué paso va, en vez de quedarse todo quieto.
 const STEPS:{id:Stage;label:string;wait:string}[]=[

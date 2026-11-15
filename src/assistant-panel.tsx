@@ -6,6 +6,7 @@ import {answer,examplesFor,greeting,type Answer,type Proposal} from './assistant
 import {due,type CalEvent} from './ics';
 import {bytes,type Item,type Lesson} from './types';
 import {usePlan} from './plan';
+import {readPref,writePref} from './prefs';
 import type {Plan} from './settings';
 
 type Msg={id:number;from:'me'|'dino';text:string;answer?:Answer;added?:boolean};
@@ -86,7 +87,7 @@ export function AssistantPanel({a}:{a:A}){
 // Móvil: el dinosaurio en la esquina, con un saludo breve la primera vez en cada sesión.
 export function AssistantFab({a,hint:custom}:{a:A;hint?:string}){
   const [hint,setHint]=useState(false);
-  useEffect(()=>{if(!isMobile())return;let seen=false;try{seen=!!sessionStorage.getItem('aula-dino')}catch{}if(seen)return;a.later(()=>setHint(true),1800);a.later(()=>setHint(false),7500);try{sessionStorage.setItem('aula-dino','1')}catch{}},[]);
+  useEffect(()=>{if(!isMobile())return;if(readPref('aula-dino','session'))return;a.later(()=>setHint(true),1800);a.later(()=>setHint(false),7500);writePref('aula-dino','1','session')},[]);
   useEffect(()=>{if(a.open)setHint(false)},[a.open]);
   return <>
     {hint&&!a.open&&<button className="dino-hint" onClick={()=>a.setOpen(true)}>{custom??'¿Te busco alguna clase?'}</button>}
