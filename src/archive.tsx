@@ -120,30 +120,22 @@ export default function Archive({initial,settings:initialSettings,onSignOut,star
       cancel(undefined,id);await api({action:'deleteLesson',id});synced();backToList();toast('Clase eliminada.')}})}
   function removeFile(f:Item){setAsk({title:'¿Eliminar este archivo?',text:`Se borrará «${f.name}». ${trashNote(false)}`,confirm:'Eliminar',danger:true,run:async()=>{await api({action:'deleteFile',id:f.id});synced();toast('Archivo eliminado.')}})}
   function rename(f:Item){setAsk({title:'Renombrar archivo',confirm:'Guardar nombre',input:f.name,run:async name=>{name=name.trim();if(!name||name===f.name)return;await api({action:'renameFile',id:f.id,name});synced()}})}
-  async function downloadClass(){
-    if(!active||(zip&&zip.status!=='done'&&zip.status!=='error'))return;
-    const l=active,fs=activeFiles,size=fs.reduce((a,f)=>a+f.size,0);
-    setZip({lesson:l.id,title:l.title,loaded:0,total:size,status:'preparing'});
-    let timer:ReturnType<typeof setTimeout>|undefined,last:ZipProgress|null=null;
-    try{
-      const {downloadZip}=await import('./zip');
-      await downloadZip(fs,l.title,l.notes,p=>{last=p;if(!timer)timer=setTimeout(()=>{timer=undefined;const q=last!;setZip(z=>z&&{...z,loaded:q.loaded,total:q.total,mode:q.mode,status:'running'})},120)});
-      clearTimeout(timer);setZip(z=>z&&{...z,loaded:z.total,status:'done'});celebrate();setTimeout(()=>setZip(z=>z?.status==='done'?null:z),4500);
-    }catch(e){clearTimeout(timer);setZip(z=>z&&{...z,status:'error',error:(e as Error).message})}
-  }
-
-  // ZIP de varias clases: «Exportar todo» o lo que ha encontrado el asistente.
-  async function zipMany(title:string,size:number,run:(mod:typeof import('./zip'),onProgress:(p:ZipProgress)=>void)=>Promise<void>){
+  // Un ZIP con su tarjeta de progreso (que se refresca como mucho cada 120 ms). Solo uno a la vez.
+  // lesson: la clase que se descarga ('*' si son varias); hide: la tarjeta se quita sola al acabar.
+  async function runZip(lesson:string,title:string,size:number,run:(mod:typeof import('./zip'),onProgress:(p:ZipProgress)=>void)=>Promise<void>,hide=false){
     if(zip&&(zip.status==='preparing'||zip.status==='running'))return;
-    setZip({lesson:'*',title,loaded:0,total:size,status:'preparing'});
+    setZip({lesson,title,loaded:0,total:size,status:'preparing'});
     let timer:ReturnType<typeof setTimeout>|undefined,last:ZipProgress|null=null;
     try{const mod=await import('./zip');
       await run(mod,p=>{last=p;if(!timer)timer=setTimeout(()=>{timer=undefined;const q=last!;setZip(z=>z&&{...z,loaded:q.loaded,total:q.total,mode:q.mode,status:'running'})},120)});
       clearTimeout(timer);setZip(z=>z&&{...z,loaded:z.total,status:'done'});celebrate();
+      if(hide)setTimeout(()=>setZip(z=>z?.status==='done'?null:z),4500);
     }catch(e){clearTimeout(timer);setZip(z=>z&&{...z,status:'error',error:(e as Error).message})}
   }
-  const exportAll=()=>zipMany('Aula completa',total,(m,p)=>m.downloadEverything(lessons,files,settings,p));
-  const downloadFound=(ls:Lesson[],fs:Item[],label:string,size:number)=>zipMany(label,size,(m,p)=>m.downloadSelection(ls,fs,label,settings,p));
+  const downloadClass=()=>{if(!active)return;const l=active,fs=activeFiles;runZip(l.id,l.title,fs.reduce((a,f)=>a+f.size,0),(m,p)=>m.downloadZip(fs,l.title,l.notes,p),true)};
+  // ZIP de varias clases: «Exportar todo» o lo que ha encontrado el asistente.
+  const exportAll=()=>runZip('*','Aula completa',total,(m,p)=>m.downloadEverything(lessons,files,settings,p));
+  const downloadFound=(ls:Lesson[],fs:Item[],label:string,size:number)=>runZip('*',label,size,(m,p)=>m.downloadSelection(ls,fs,label,settings,p));
 
   // Ánimo del dinosaurio según lo que pasa: celebra, se concentra mientras subes, se preocupa si
   // entregas algo hoy y se duerme de madrugada. La hora se lee en el navegador (no en el servidor).
