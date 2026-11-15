@@ -40,7 +40,10 @@ export default function Archive({initial,settings:initialSettings,onSignOut,star
   const [selected,setSelected]=useState<string|null>(null),[dir,setDir]=useState(0),[form,setForm]=useState<{edit?:Lesson}|null>(null),[ask,setAsk]=useState<Ask|null>(null);
   const [viewer,setViewer]=useState<{items:Item[];start:number}|null>(null),[notice,setNotice]=useState<{text:string;id:number}|null>(null),[zip,setZip]=useState<Zip|null>(null),[drag,setDrag]=useState(false);
   const input=useRef<HTMLInputElement>(null);
-  const {uploads,busy,add,cancel,retry,clear}=useUploads(useCallback((item:Item)=>setFiles(fs=>[...fs,item]),[]));
+  // Tras cada cambio, la pantalla toma las clases y los archivos de lo guardado (store.doc): así enseña
+  // exactamente lo que hay en aula.json, recortes incluidos, y lo que llegue de otro dispositivo.
+  const synced=()=>{setLessons(store.doc.lessons);setFiles(store.doc.files)};
+  const {uploads,busy,add,cancel,retry,clear}=useUploads(useCallback(()=>{setLessons(store.doc.lessons);setFiles(store.doc.files)},[store]));
   const toast=(text:string)=>setNotice({text,id:Date.now()});
   // Calendario: sección propia (#calendario) con los datos cargados desde el principio para la portada.
   const cal=useCalendar(),[section,setSection]=useState<'archive'|'calendar'|'settings'>('archive');
@@ -95,7 +98,7 @@ export default function Archive({initial,settings:initialSettings,onSignOut,star
         if(!id){const r=newLesson(doc,{subject:l.subject,title:l.title,date:l.date,topic:l.topic,notes:l.notes});doc=r.doc;id=r.id;have.set(key(l),id);created++}
         targets.push({id,l})}
       return doc});
-    setLessons(store.doc.lessons);setFiles(store.doc.files);setSettings(store.doc.settings);
+    synced();setSettings(store.doc.settings);
     const stored=new Set(store.doc.files.map(f=>`${f.lesson}|${f.name}|${f.size}`));
     const queued=new Set(uploads.filter(u=>u.status==='queued'||u.status==='uploading'||u.status==='finishing').map(u=>`${u.lesson}|${u.file.name}|${u.file.size}`));
     let missing=0;
@@ -107,17 +110,16 @@ export default function Archive({initial,settings:initialSettings,onSignOut,star
     toast(!created&&!missing?'Ya estaba todo importado.':[created?plural(created,'clase nueva','clases nuevas'):'',missing?`subiendo ${plural(missing,'archivo','archivos')}`:''].filter(Boolean).join(' · ')+'.');
   }
   async function saveLesson(v:Omit<Lesson,'id'>,pending:File[],edit?:Lesson){
-    const {id}=await api({action:'save',...v,id:edit?.id});const l={...v,id};
-    setLessons(ls=>edit?ls.map(x=>x.id===id?l:x):[l,...ls]);
-    if(!edit){openLesson(id);if(pending.length)add(pending,id,l.title)}
+    const {id}=await api({action:'save',...v,id:edit?.id});synced();
+    if(!edit){openLesson(id);if(pending.length)add(pending,id,store.doc.lessons.find(x=>x.id===id)?.title??v.title)}
     toast(edit?'Cambios guardados.':'Clase creada.');
   }
   function addFiles(list:File[]){if(active&&list.length)add(list,active.id,active.title)}
   function removeLesson(){if(!active)return;const id=active.id,n=activeFiles.length;
     setAsk({title:'¿Eliminar esta clase?',text:`Se borrarán «${active.title}» y ${plural(n,'archivo','archivos')}. ${trashNote(n!==1)}`,confirm:'Eliminar clase',danger:true,run:async()=>{
-      cancel(undefined,id);await api({action:'deleteLesson',id});setLessons(ls=>ls.filter(l=>l.id!==id));setFiles(fs=>fs.filter(f=>f.lesson!==id));backToList();toast('Clase eliminada.')}})}
-  function removeFile(f:Item){setAsk({title:'¿Eliminar este archivo?',text:`Se borrará «${f.name}». ${trashNote(false)}`,confirm:'Eliminar',danger:true,run:async()=>{await api({action:'deleteFile',id:f.id});setFiles(fs=>fs.filter(x=>x.id!==f.id));toast('Archivo eliminado.')}})}
-  function rename(f:Item){setAsk({title:'Renombrar archivo',confirm:'Guardar nombre',input:f.name,run:async name=>{name=name.trim();if(!name||name===f.name)return;await api({action:'renameFile',id:f.id,name});setFiles(fs=>fs.map(x=>x.id===f.id?{...x,name}:x))}})}
+      cancel(undefined,id);await api({action:'deleteLesson',id});synced();backToList();toast('Clase eliminada.')}})}
+  function removeFile(f:Item){setAsk({title:'¿Eliminar este archivo?',text:`Se borrará «${f.name}». ${trashNote(false)}`,confirm:'Eliminar',danger:true,run:async()=>{await api({action:'deleteFile',id:f.id});synced();toast('Archivo eliminado.')}})}
+  function rename(f:Item){setAsk({title:'Renombrar archivo',confirm:'Guardar nombre',input:f.name,run:async name=>{name=name.trim();if(!name||name===f.name)return;await api({action:'renameFile',id:f.id,name});synced()}})}
   async function downloadClass(){
     if(!active||(zip&&zip.status!=='done'&&zip.status!=='error'))return;
     const l=active,fs=activeFiles,size=fs.reduce((a,f)=>a+f.size,0);
@@ -222,7 +224,7 @@ export default function Archive({initial,settings:initialSettings,onSignOut,star
           </div>
         </>:inCalendar?<CalendarView cal={cal} toast={toast} onDone={celebrate}/>
         :inSettings?<SettingsView settings={settings} lessons={lessons} events={cal.events} onImport={onImport} onSignOut={onSignOut} onSaved={s=>{setSettings(s);cal.reload();toast('Ajustes guardados.')}}
-          onMoved={(from,to)=>{const n=lessons.filter(l=>l.subject===from).length;setLessons(ls=>ls.map(l=>l.subject===from?{...l,subject:to}:l));toast(`${plural(n,'clase movida','clases movidas')} a ${plan.short(to)}.`)}}/>:<>
+          onMoved={(from,to)=>{const n=lessons.filter(l=>l.subject===from).length;synced();toast(`${plural(n,'clase movida','clases movidas')} a ${plan.short(to)}.`)}}/>:<>
           <div className="page-heading">
             <div><div className="eyebrow">TU CURSO, EN UN SOLO LUGAR</div><h1>{filter?plan.name(filter):'Todo lo que aprendes, aquí.'}</h1><p>Guarda tus clases. Encuentra lo que necesitas. A tu ritmo.</p></div>
             <button className="primary" onClick={()=>setForm({})}><Plus size={18}/>Nueva clase</button>

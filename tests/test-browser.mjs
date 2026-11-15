@@ -51,5 +51,14 @@ try{
     const r=await fetch('./__aula-zip/'+token+'/x.zip');const b=new Uint8Array(await r.arrayBuffer());
     return {status:r.status,len:b.length,declared:Number(r.headers.get('content-length')),sig:b[0]===0x50&&b[1]===0x4b};`);
   assert.equal(zip.status,200);assert.ok(zip.sig);assert.equal(zip.len,zip.declared,'el tamaño anunciado es exacto');
-  console.log('PASS navegador: service worker activo, archivo íntegro con nombre UTF-8, Range (206) y ZIP en streaming');
+  // Lo que se ve tras guardar es lo guardado: el tema se recorta a 200 caracteres también en pantalla.
+  const topic=await run(`
+    const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+    const set=(el,v)=>{Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(el,v);el.dispatchEvent(new Event('input',{bubbles:true}))};
+    [...document.querySelectorAll('.detail-tools button')].find(b=>b.textContent.includes('Editar')).click();await sleep(400);
+    set(document.querySelector('.modal input[name=topic]'),'t'.repeat(250));
+    document.querySelector('.modal button[type=submit]').click();await sleep(1200);
+    return document.querySelector('.page-heading p').textContent.length;`);
+  assert.equal(topic,200,'el tema en pantalla coincide con el guardado');
+  console.log('PASS navegador: service worker activo, archivo íntegro con nombre UTF-8, Range (206), ZIP en streaming y pantalla igual a lo guardado');
 }finally{try{ws?.close()}catch{};edge.kill();await sleep(500);try{rmSync(profile,{recursive:true,force:true})}catch{}}
