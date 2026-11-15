@@ -19,6 +19,7 @@ import {dateLabel} from './lesson-bits';
 import LessonDetail from './lesson-detail';
 import Home from './home';
 import Viewer from './viewer';
+import {useNavigation} from './use-navigation';
 import CalendarView,{useCalendar,isTodo,due} from './calendar';
 import {AssistantBar,AssistantFab,AssistantPanel,useAssistant} from './assistant-panel';
 import type {Mood} from './dino';
@@ -34,15 +35,15 @@ export default function Archive({initial,settings:initialSettings,onSignOut,star
   const plan=useMemo(()=>makePlan(settings),[settings]),subjects=plan.archiveSubjects;
   const [lessons,setLessons]=useState<Lesson[]>(initial?.lessons??[]),[files,setFiles]=useState<Item[]>(initial?.files??[]),[loading,setLoading]=useState(!initial);
   const [error,setError]=useState(''),[filter,setFilter]=useState(''),[search,setSearch]=useState(''),[sort,setSort]=useState('new'),[type,setType]=useState('all');
-  const [selected,setSelected]=useState<string|null>(null),[dir,setDir]=useState(0),[form,setForm]=useState<{edit?:Lesson}|null>(null),[ask,setAsk]=useState<Ask|null>(null);
-  const [viewer,setViewer]=useState<{items:Item[];start:number}|null>(null),[notice,setNotice]=useState<{text:string;id:number}|null>(null),[zip,setZip]=useState<Zip|null>(null);
+  const [form,setForm]=useState<{edit?:Lesson}|null>(null),[ask,setAsk]=useState<Ask|null>(null);
+  const [notice,setNotice]=useState<{text:string;id:number}|null>(null),[zip,setZip]=useState<Zip|null>(null);
   // Tras cada cambio, la pantalla toma las clases y los archivos de lo guardado (store.doc): así enseña
   // exactamente lo que hay en aula.json, recortes incluidos, y lo que llegue de otro dispositivo.
   const synced=()=>{setLessons(store.doc.lessons);setFiles(store.doc.files)};
   const {uploads,busy,add,cancel,retry,clear}=useUploads(useCallback(()=>{setLessons(store.doc.lessons);setFiles(store.doc.files)},[store]));
   const toast=(text:string)=>setNotice({text,id:Date.now()});
   // Calendario: sección propia (#calendario) con los datos cargados desde el principio para la portada.
-  const cal=useCalendar(),[section,setSection]=useState<'archive'|'calendar'|'settings'>('archive');
+  const cal=useCalendar();
   // La mascota se alegra cuando termina una subida.
   const [dinoMood,setDinoMood]=useState<Mood>('idle'),doneCount=uploads.filter(u=>u.status==='done').length,lastDone=useRef(0);
   useEffect(()=>{if(doneCount>lastDone.current){setDinoMood('happy');const t=setTimeout(()=>setDinoMood('idle'),2500);lastDone.current=doneCount;return()=>clearTimeout(t)}lastDone.current=doneCount},[doneCount]);
@@ -51,25 +52,8 @@ export default function Archive({initial,settings:initialSettings,onSignOut,star
   useEffect(()=>{if(!initial)refresh()},[]);
   useEffect(()=>{if(!notice)return;const t=setTimeout(()=>setNotice(null),3800);return()=>clearTimeout(t)},[notice]);
 
-  // Cada clase abierta es una entrada del historial: el botón «atrás» del móvil vuelve a la lista.
-  useEffect(()=>{
-    const sync=()=>{const s=history.state as {lesson?:string;viewer?:boolean;calendar?:boolean;settings?:boolean}|null;setDir(-1);setSelected(s?.lesson??null);setSection(s?.calendar?'calendar':s?.settings?'settings':'archive');if(!s?.viewer)setViewer(null)};
-    addEventListener('popstate',sync);
-    const id=decodeURIComponent(location.hash.slice(1));
-    if(id==='calendario'){history.replaceState(null,'',location.pathname);history.pushState({calendar:true},'','#calendario');setSection('calendar')}
-    else if(id==='ajustes'){history.replaceState(null,'',location.pathname);history.pushState({settings:true},'','#ajustes');setSection('settings')}
-    else if(id&&lessons.some(l=>l.id===id)){history.replaceState(null,'',location.pathname);history.pushState({lesson:id},'','#'+id);setSelected(id)}
-    return()=>removeEventListener('popstate',sync);
-  },[]);
-  const openLesson=(id:string)=>{history.pushState({lesson:id},'','#'+id);setDir(1);setSelected(id);setSection('archive');scrollTo({top:0})};
-  const openCalendar=()=>{if(section==='calendar'&&!selected)return;history.pushState({calendar:true},'','#calendario');setDir(1);setSelected(null);setSection('calendar');scrollTo({top:0})};
-  const openSettings=()=>{if(section==='settings'&&!selected)return;history.pushState({settings:true},'','#ajustes');setDir(1);setSelected(null);setSection('settings');scrollTo({top:0})};
-  const backToList=()=>{setDir(-1);if(history.state?.lesson)history.back();else setSelected(null)};
-  const openViewer=(items:Item[],start:number)=>{history.pushState({lesson:selected,viewer:true},'');setViewer({items,start})};
-  const closeViewer=()=>{if(history.state?.viewer)history.back();else setViewer(null)};
-  // Ir a la lista de clases desde cualquier sitio. No se usa «atrás»: si antes estuviste en otra sección,
-  // el historial te devolvería allí (p. ej. de Ajustes al Calendario).
-  const goHome=()=>{history.pushState(null,'',location.pathname+location.search);setDir(-1);setSelected(null);setSection('archive');scrollTo({top:0})};
+  // Navegación con el historial del navegador (clases, calendario, Ajustes y visor).
+  const {selected,dir,section,viewer,openLesson,openCalendar,openSettings,backToList,openViewer,closeViewer,goHome}=useNavigation(id=>lessons.some(l=>l.id===id));
   const chooseSubject=(id:string)=>{setFilter(id);if(selected||section!=='archive')goHome()};
 
   const active=lessons.find(l=>l.id===selected);
