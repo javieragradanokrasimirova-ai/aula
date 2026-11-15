@@ -1,6 +1,5 @@
 import {useCallback,useEffect,useMemo,useRef,useState} from 'react';
-import {Modal} from './modal';
-import {BookOpen,LayoutGrid,Folder,Plus,Search,ArrowUpRight,Upload,FileAudio,FileText,Image as ImageIcon,Download,X,ChevronLeft,ChevronDown,Lock,HardDrive,Trash2,Pencil,Loader2,Check,FolderOpen,RotateCw,AlertCircle,FileArchive,CalendarDays,Settings2,LogOut} from 'lucide-react';
+import {BookOpen,LayoutGrid,Folder,Plus,Search,ArrowUpRight,Upload,FileAudio,FileText,Image as ImageIcon,Download,X,ChevronLeft,ChevronDown,Lock,HardDrive,Trash2,Pencil,Loader2,Check,FolderOpen,AlertCircle,CalendarDays,Settings2,LogOut} from 'lucide-react';
 import {useStore} from './store';
 import ImportView from './import-view';
 import Avatar from './avatar';
@@ -8,25 +7,19 @@ import {entryBlob,type ImportPlan} from './import';
 import {saveLesson as newLesson} from './doc';
 import {bytes,fileURL,kindOf,plural,viewableImage,type Item,type Lesson} from './types';
 import {DEFAULT_SETTINGS,makePlan,norm,type Settings} from './settings';
-import {PlanContext,usePlan} from './plan';
+import {PlanContext} from './plan';
 import SettingsView from './settings-view';
-import {useUploads,type Upload as UploadJob} from './uploads';
+import {useUploads} from './uploads';
+import LessonForm from './lesson-form';
+import AskDialog,{type Ask} from './ask-dialog';
+import {UploadPanel,UploadRow,ZipCard,type Zip} from './dock';
+import {Kind,dateLabel,kindLabel} from './lesson-bits';
 import Viewer from './viewer';
 import Schedule from './schedule';
 import CalendarView,{useCalendar,isTodo,due} from './calendar';
 import {AssistantBar,AssistantFab,AssistantPanel,useAssistant} from './assistant-panel';
 import type {Mood} from './dino';
 import type {ZipProgress} from './zip';
-
-type Ask={title:string;text?:string;confirm:string;danger?:boolean;input?:string;run:(value:string)=>Promise<void>|void};
-type Zip={lesson:string;title:string;loaded:number;total:number;mode?:ZipProgress['mode'];status:'preparing'|'running'|'done'|'error';error?:string};
-
-const today=()=>new Date().toLocaleDateString('en-CA');
-const dateLabel=(s:string)=>new Date(s+'T12:00:00').toLocaleDateString('es-ES',{day:'numeric',month:'long',year:'numeric'});
-
-
-function Kind({f,size=20}:{f:{type:string;name:string};size?:number}){const k=kindOf(f);return k==='audio'?<FileAudio size={size}/>:k==='image'?<ImageIcon size={size}/>:<FileText size={size}/>}
-const kindLabel={audio:'Audio',image:'Imagen',doc:'Documento'};
 
 export default function Archive({initial,settings:initialSettings,onSignOut,startImport}:{initial?:{lessons:Lesson[];files:Item[]};settings?:Settings;onSignOut:()=>void;startImport?:boolean}){
   const store=useStore();
@@ -268,93 +261,4 @@ export default function Archive({initial,settings:initialSettings,onSignOut,star
     {viewer&&<Viewer items={viewer.items} start={viewer.start} onClose={closeViewer}/>}
     {importing&&<ImportView onClose={()=>setImporting(false)} onImport={runImport}/>}
   </div></PlanContext.Provider>;
-}
-
-function LessonForm({edit,defaultSubject,onClose,onSave}:{edit?:Lesson;defaultSubject:string;onClose:()=>void;onSave:(v:Omit<Lesson,'id'>,pending:File[],edit?:Lesson)=>Promise<void>}){
-  const [pending,setPending]=useState<File[]>([]),[saving,setSaving]=useState(false),[error,setError]=useState('');
-  const subjects=usePlan().archiveSubjects;
-  return <Modal label={edit?'Editar clase':'Nueva clase'} onClose={onClose}>{close=><>
-    <div className="modal-head"><div><span className="eyebrow">TU ARCHIVO PERSONAL</span><h2>{edit?'Editar clase':'Una nueva clase'}</h2></div><button className="iconbtn" aria-label="Cerrar" onClick={close}><X size={20}/></button></div>
-    <form onSubmit={async e=>{e.preventDefault();const v=Object.fromEntries(new FormData(e.currentTarget)) as Record<string,string>;setSaving(true);setError('');
-      try{await onSave({subject:v.subject,title:v.title.trim(),date:v.date,topic:v.topic||'',notes:v.notes||''},pending,edit);close()}catch(err){setError((err as Error).message);setSaving(false)}}}>
-      <label>Asignatura<select name="subject" required defaultValue={edit?.subject||defaultSubject||subjects[0]?.id}>{subjects.map(s=><option value={s.id} key={s.id}>{s.name} ({s.short})</option>)}</select></label>
-      {!subjects.length&&<p className="error" role="alert"><AlertCircle size={17}/>Primero añade alguna asignatura en Ajustes.</p>}
-      <div className="form-grid"><label>Título<input name="title" required maxLength={200} autoFocus placeholder="Ej. Herencia y clases abstractas" defaultValue={edit?.title}/></label><label>Fecha<input name="date" type="date" required defaultValue={edit?.date||today()}/></label></div>
-      <label>Tema <small>opcional</small><input name="topic" placeholder="Ej. Programación orientada a objetos" defaultValue={edit?.topic}/></label>
-      <label>Anotaciones <small>opcional</small><textarea name="notes" rows={3} placeholder="Algo que quieras recordar de esta clase…" defaultValue={edit?.notes}/></label>
-      {!edit&&<label className={'pick-files'+(pending.length?' has-files':'')}><span className="dropzone-icon">{pending.length?<Check size={20}/>:<Upload size={20}/>}</span><b>{pending.length?plural(pending.length,'archivo listo','archivos listos'):'Añadir audio, fotos o documentos'}</b><small>{pending.length?`${bytes(pending.reduce((a,f)=>a+f.size,0))} · Toca para añadir más`:'Puedes elegir fotos y luego el audio: se van sumando'}</small><input type="file" multiple onChange={e=>{
-        // Cada selección se suma a las anteriores (sin repetir el mismo archivo).
-        const picked=Array.from(e.target.files||[]);e.target.value='';
-        setPending(prev=>[...prev,...picked.filter(f=>!prev.some(p=>p.name===f.name&&p.size===f.size&&p.lastModified===f.lastModified))]);
-      }}/></label>}
-      {!edit&&pending.length>0&&<ul className="pending-files">{pending.map((f,i)=><li key={f.name+f.size+f.lastModified}>
-        <span className={'fileicon '+kindOf(f)}><Kind f={f} size={16}/></span><span><b>{f.name}</b><small>{bytes(f.size)}</small></span>
-        <button type="button" className="iconbtn" aria-label={'Quitar '+f.name} onClick={()=>setPending(p=>p.filter((_,j)=>j!==i))}><X size={16}/></button></li>)}</ul>}
-      {error&&<p className="error" role="alert"><AlertCircle size={17}/>{error}</p>}
-      <div className="form-footer"><button type="button" className="ghost" onClick={close}>Cancelar</button><button className="primary" disabled={saving} type="submit">{saving?<><Loader2 className="spin" size={16}/>Guardando…</>:<>{edit?'Guardar cambios':'Crear clase'}<ArrowUpRight size={17}/></>}</button></div>
-    </form></>}</Modal>;
-}
-
-function AskDialog({ask,onClose,onError}:{ask:Ask;onClose:()=>void;onError:(m:string)=>void}){
-  const [busy,setBusy]=useState(false),[value,setValue]=useState(ask.input??'');
-  return <Modal label={ask.title} className="ask" onClose={onClose}>{close=><form onSubmit={async e=>{e.preventDefault();setBusy(true);try{await ask.run(value);close()}catch(err){onError((err as Error).message);close()}}}>
-    <h2>{ask.title}</h2>{ask.text&&<p>{ask.text}</p>}
-    {ask.input!==undefined&&<input value={value} onChange={e=>setValue(e.target.value)} autoFocus onFocus={e=>{const dot=e.target.value.lastIndexOf('.');e.target.setSelectionRange(0,dot>0?dot:e.target.value.length)}} aria-label="Nombre"/>}
-    <div className="form-footer"><button type="button" className="ghost" onClick={close}>Cancelar</button><button className={ask.danger?'primary destructive':'primary'} disabled={busy} autoFocus={ask.input===undefined}>{busy&&<Loader2 className="spin" size={16}/>}{ask.confirm}</button></div>
-  </form>}</Modal>;
-}
-
-const eta=(u:UploadJob)=>{if(u.rate<1)return '';const s=(u.file.size-u.loaded)/u.rate;return s<60?`${Math.max(1,Math.round(s))} s`:`${Math.round(s/60)} min`};
-function uploadText(u:UploadJob){
-  if(u.status==='queued')return 'En cola';
-  if(u.status==='finishing')return 'Guardando…';
-  if(u.status==='done')return 'Guardado';
-  if(u.status==='cancelled')return 'Cancelado';
-  if(u.status==='error')return u.error||'Error';
-  if(!u.loaded)return 'Empezando…';const left=eta(u);return `${bytes(u.loaded)} de ${bytes(u.file.size)}${u.rate>1?` · ${bytes(u.rate)}/s`:''}${left?` · quedan ${left}`:''}`;
-}
-
-function UploadRow({u,i,onCancel,onRetry}:{u:UploadJob;i:number;onCancel:()=>void;onRetry:()=>void}){
-  const pct=u.file.size?u.loaded/u.file.size:0;
-  return <div className={'filerow uploading '+u.status} style={{'--i':i} as React.CSSProperties}>
-    <span className="fileicon upload"><Upload size={18}/></span>
-    <div className="filename"><b>{u.file.name}</b><small>{uploadText(u)}</small><span className="bar"><i style={{transform:`scaleX(${pct})`}}/></span></div>
-    <div className="file-actions">{u.status==='error'?<button className="iconbtn" onClick={onRetry} title="Reintentar" aria-label={'Reintentar '+u.file.name}><RotateCw size={16}/></button>:null}
-      {u.status==='queued'||u.status==='uploading'?<button className="iconbtn" onClick={onCancel} title="Cancelar" aria-label={'Cancelar '+u.file.name}><X size={17}/></button>:null}</div>
-  </div>;
-}
-
-function UploadPanel({uploads,onCancel,onRetry,onClear,onOpen}:{uploads:UploadJob[];onCancel:(k:string)=>void;onRetry:(k:string)=>void;onClear:()=>void;onOpen:(lesson:string)=>void}){
-  // En el móvil empieza contraído para no tapar la clase.
-  const [open,setOpen]=useState(()=>!matchMedia('(max-width:760px)').matches);
-  const running=uploads.filter(u=>u.status==='queued'||u.status==='uploading'||u.status==='finishing'),failed=uploads.filter(u=>u.status==='error').length;
-  // Al terminar sin errores se contrae y, poco después, desaparece.
-  useEffect(()=>{if(running.length||failed)return;setOpen(false);const t=setTimeout(onClear,6000);return()=>clearTimeout(t)},[running.length,failed,onClear]);
-  const size=running.reduce((s,u)=>s+u.file.size,0),loaded=running.reduce((s,u)=>s+u.loaded,0),pct=size?Math.round(loaded/size*100):100;
-  const title=running.length?`Subiendo ${plural(running.length,'archivo','archivos')} · ${pct}%`:failed?`${plural(failed,'subida con error','subidas con error')}`:'Subidas completadas';
-  return <section className={'panel uploads-panel'+(open?' open':'')} aria-label="Subidas">
-    <header><span className={'panel-icon'+(running.length?' busy':failed?' warn':' ok')}>{running.length?<Loader2 className="spin" size={17}/>:failed?<AlertCircle size={17}/>:<Check size={17}/>}</span>
-      <div><b>{title}</b><small>{running.length?'Puedes seguir usando Aula mientras tanto':'Tus archivos ya están en su clase'}</small></div>
-      <button className="iconbtn" onClick={()=>setOpen(o=>!o)} aria-expanded={open} aria-label={open?'Contraer':'Desplegar'}><ChevronDown size={18} className="chev"/></button>
-      {!running.length&&<button className="iconbtn" onClick={onClear} aria-label="Cerrar panel de subidas"><X size={17}/></button>}
-    </header>
-    {running.length>0&&<span className="bar total"><i style={{transform:`scaleX(${pct/100})`}}/></span>}
-    {open&&<ul>{uploads.map(u=><li key={u.key} className={u.status}>
-      <button className="panel-file" onClick={()=>onOpen(u.lesson)}><b>{u.file.name}</b><small>{u.lessonTitle} · {uploadText(u)}</small>
-        {u.status!=='done'&&u.status!=='cancelled'&&<span className="bar"><i style={{transform:`scaleX(${u.file.size?u.loaded/u.file.size:0})`}}/></span>}</button>
-      {u.status==='done'?<Check size={16} className="done-icon"/>:u.status==='error'?<button className="iconbtn" onClick={()=>onRetry(u.key)} aria-label="Reintentar"><RotateCw size={15}/></button>:u.status==='queued'||u.status==='uploading'?<button className="iconbtn" onClick={()=>onCancel(u.key)} aria-label="Cancelar"><X size={16}/></button>:null}
-    </li>)}</ul>}
-  </section>;
-}
-
-function ZipCard({zip,onClose}:{zip:Zip;onClose:()=>void}){
-  const pct=zip.total?Math.min(100,Math.round(zip.loaded/zip.total*100)):0;
-  const text=zip.status==='preparing'?'Preparando la descarga…':zip.status==='error'?zip.error:zip.status==='done'?(zip.mode==='stream'?'Descarga completada':'ZIP listo · revisa tus descargas')
-    :zip.mode==='stream'?`Descargando · ${bytes(zip.loaded)} de ${bytes(zip.total)}`:`Reuniendo archivos · ${bytes(zip.loaded)} de ${bytes(zip.total)}`;
-  return <section className={'panel zip-panel '+zip.status} aria-live="polite">
-    <header><span className={'panel-icon'+(zip.status==='error'?' warn':zip.status==='done'?' ok':' busy')}>{zip.status==='error'?<AlertCircle size={17}/>:zip.status==='done'?<Check size={17}/>:<FileArchive size={17}/>}</span>
-      <div><b>{zip.title}.zip</b><small>{text}</small></div>
-      {(zip.status==='done'||zip.status==='error')&&<button className="iconbtn" onClick={onClose} aria-label="Cerrar"><X size={17}/></button>}</header>
-    {(zip.status==='running'||zip.status==='preparing')&&<span className={'bar total'+(zip.status==='preparing'?' indeterminate':'')}><i style={{transform:`scaleX(${pct/100})`}}/></span>}
-  </section>;
 }
