@@ -13,8 +13,16 @@ try{
   ws.onmessage=e=>{const m=JSON.parse(e.data);if(m.id&&pending.has(m.id)){pending.get(m.id)(m);pending.delete(m.id)}};
   const send=(method,params={})=>new Promise(r=>{const id=++seq;pending.set(id,r);ws.send(JSON.stringify({id,method,params}))});
   const run=async expr=>{const r=await send('Runtime.evaluate',{expression:`(async()=>{${expr}})()`,awaitPromise:true,returnByValue:true});if(r.result.exceptionDetails)throw Error(JSON.stringify(r.result.exceptionDetails).slice(0,600));return r.result.result.value};
-  await send('Page.navigate',{url:URL0});await sleep(3500);
-  assert.equal(await run(`return !!navigator.serviceWorker.controller`),true,'el service worker controla la página');
+  // Se espera a que el service worker tome el control y salga la bienvenida. Justo después de cambiar el
+  // código, el servidor de desarrollo puede recargar la página a mitad de la activación del service worker
+  // (eso no pasa en la web publicada) y esa carga queda sin control: solo en ese caso se recarga una vez.
+  let contexts=0;const onEvent=m=>{if(m.method==='Runtime.executionContextCreated'&&m.params.context.auxData?.isDefault)contexts++};
+  const base=ws.onmessage;ws.onmessage=e=>{onEvent(JSON.parse(e.data));base(e)};await send('Runtime.enable');
+  const ready=async()=>{for(let i=0;i<30;i++){await sleep(500);if(await run(`return !!navigator.serviceWorker?.controller&&!!document.querySelector('.welcome-card')`).catch(()=>false))return true}return false};
+  await send('Page.navigate',{url:URL0});
+  let controlled=await ready();
+  if(!controlled&&contexts>2){await send('Page.reload');controlled=await ready()}
+  assert.equal(controlled,true,'el service worker controla la página');
   // Un evento suelto en el modo demo: así no sale la bienvenida de la primera vez y se va directo a Aula.
   await run(`await new Promise((ok,fail)=>{const r=indexedDB.open('aula-demo',1);r.onupgradeneeded=()=>{r.result.createObjectStore('doc');r.result.createObjectStore('blobs')};r.onerror=fail;
     r.onsuccess=()=>{const t=r.result.transaction('doc','readwrite');t.objectStore('doc').put({format:'aula',version:1,lessons:[],files:[],moodle:{importedAt:null},
