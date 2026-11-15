@@ -1,4 +1,8 @@
-@import 'tailwindcss';
+/* De Tailwind solo se usan el tema y la «base» (preflight). Sin la capa de utilidades: si no, Tailwind
+   convierte palabras sueltas del código (hidden, grid, table…) en clases con estilos propios. */
+@layer theme, base, components, utilities;
+@import 'tailwindcss/theme.css' layer(theme);
+@import 'tailwindcss/preflight.css' layer(base);
 
 /* ---------- Tokens ---------- */
 :root{
