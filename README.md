@@ -1,5 +1,7 @@
 # Aula
 
+**Probar:** https://javieragradanokrasimirova-ai.github.io/aula/ (con el modo demo no hace falta cuenta)
+
 Una web para guardar lo de clase: **audios, fotos y apuntes** organizados por asignatura y fecha, tu **horario** con lo que toca ahora, y tus **entregas y exámenes** (también los de Moodle). Incluye un pequeño asistente (un dinosaurio) que entiende frases como «descárgame las clases del 27 de octubre» o «¿qué tengo mañana?». Funciona con reglas, sin inteligencia artificial.
 
 ## Dónde se guardan tus datos
